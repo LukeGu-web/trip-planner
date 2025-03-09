@@ -1,33 +1,42 @@
 from fastapi import FastAPI
 from redis import Redis
 from dotenv import load_dotenv
-import os
+from app.core.config import settings
+from app.api.v1.routes import router as api_router
 
 # Load environment variables
 load_dotenv()
 
 app = FastAPI(
-    title="FastAPI Redis App",
-    description="An application built with FastAPI and Redis",
-    version="1.0.0"
+    title=settings.APP_NAME,
+    description="Backend for Frontend service for Transport for NSW Trip Planner API",
+    version=settings.APP_VERSION
 )
 
 # Redis connection
 redis_client = Redis(
-    host=os.getenv("REDIS_HOST", "localhost"),
-    port=int(os.getenv("REDIS_PORT", 6379)),
-    db=0,
+    host=settings.REDIS_HOST,
+    port=settings.REDIS_PORT,
+    db=settings.REDIS_DB,
     decode_responses=True
 )
 
-@app.get("/")
-async def root():
-    return {"message": "Welcome to FastAPI + Redis Application"}
+# Include API routes
+app.include_router(api_router, prefix="/api/v1")
 
-@app.get("/ping")
-async def ping_redis():
+@app.get("/health")
+async def health_check():
+    """
+    Health check endpoint
+    """
     try:
-        response = redis_client.ping()
-        return {"status": "success", "message": "Redis connection successful!"}
+        redis_response = redis_client.ping()
+        return {
+            "status": "healthy",
+            "redis": "connected" if redis_response else "disconnected"
+        }
     except Exception as e:
-        return {"status": "error", "message": f"Redis connection failed: {str(e)}"} 
+        return {
+            "status": "unhealthy",
+            "redis": f"error: {str(e)}"
+        } 
