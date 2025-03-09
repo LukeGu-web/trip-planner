@@ -17,10 +17,16 @@ SYDNEY_TIMEZONE = pytz.timezone('Australia/Sydney')
 class TfnswService:
     def __init__(self):
         self.base_url = settings.TFNSW_API_BASE_URL
+        api_key = settings.TFNSW_API_KEY
+        if not api_key:
+            logger.error("TFNSW_API_KEY is not set in environment variables")
+            raise ValueError("TFNSW_API_KEY is required")
+            
         self.headers = {
-            "Authorization": f"apikey {settings.TFNSW_API_KEY}",
+            "Authorization": f"apikey {api_key}",
             "Accept": "application/json"
         }
+        logger.debug(f"Initialized TfnswService with base URL: {self.base_url}")
     
     def _format_time(self, time_str: Optional[str]) -> tuple[str, str]:
         """Format time string into date and time components"""
@@ -92,6 +98,7 @@ class TfnswService:
         full_url = f"{self.base_url}/trip?{urlencode(params)}"
         logger.info(f"Making request to Transport for NSW API:")
         logger.info(f"GET@{full_url}")
+        logger.debug(f"Request headers: {json.dumps({k: v if k != 'Authorization' else '[REDACTED]' for k, v in self.headers.items()})}")
         
         try:
             async with httpx.AsyncClient() as client:
@@ -100,14 +107,30 @@ class TfnswService:
                     headers=self.headers,
                     params=params
                 )
+                
+                if response.status_code == 401:
+                    logger.error("Authentication failed. Please check your API key")
+                    raise Exception("Authentication failed. Please check your API key")
+                elif response.status_code == 403:
+                    logger.error("Access forbidden. Your API key may not have the required permissions")
+                    raise Exception("Access forbidden. Your API key may not have the required permissions")
+                
                 response.raise_for_status()
                 
                 response_data = response.json()
                 logger.info(f"Response status: {response.status_code}")
                 return response_data
         except httpx.HTTPError as e:
-            logger.error(f"HTTP request failed: {str(e)}")
-            raise Exception(f"HTTP request failed: {str(e)}")
+            error_msg = f"HTTP request failed: {str(e)}"
+            if hasattr(e, 'response') and e.response is not None:
+                error_msg += f"\nResponse status: {e.response.status_code}"
+                try:
+                    error_details = e.response.json()
+                    error_msg += f"\nError details: {json.dumps(error_details)}"
+                except:
+                    error_msg += f"\nResponse text: {e.response.text}"
+            logger.error(error_msg)
+            raise Exception(error_msg)
         except Exception as e:
             logger.error(f"Failed to get trip plan: {str(e)}")
             raise Exception(f"Failed to get trip plan: {str(e)}")
@@ -121,7 +144,7 @@ class TfnswService:
             
         Returns:
             Formatted trip information with:
-            - journeys: List of journey options with calculated durations
+            - journeys: List of journey options with calculated durations and delays
         """
         logger.info("Starting response formatting...")
         
@@ -132,6 +155,9 @@ class TfnswService:
         journeys = []
         
         for journey in response.get("journeys", []):
+            # Log raw journey data for debugging
+            logger.debug(f"Processing journey data: {json.dumps(journey, indent=2)}")
+            
             # Ensure time fields always have values and are converted to Sydney time
             start_time = journey.get("legs", [{}])[0].get("origin", {}).get("departureTimePlanned", "")
             end_time = journey.get("legs", [{}])[-1].get("destination", {}).get("arrivalTimePlanned", "")
@@ -146,10 +172,32 @@ class TfnswService:
             except (ValueError, TypeError) as e:
                 logger.warning(f"Could not calculate duration: {e}")
             
+            # Calculate waiting time until first transport
+            waiting_time = None
+            try:
+                now = datetime.now(SYDNEY_TIMEZONE)
+                first_leg = journey.get("legs", [{}])[0]
+                first_departure = first_leg.get("origin", {}).get("departureTimeEstimated") or first_leg.get("origin", {}).get("departureTimePlanned")
+                
+                if first_departure:
+                    departure_dt = datetime.fromisoformat(first_departure.replace('Z', '+00:00')).astimezone(SYDNEY_TIMEZONE)
+                    # Calculate waiting time regardless of whether it's in the past or future
+                    waiting_time = int((departure_dt - now).total_seconds() / 60)
+                    if waiting_time > 0:
+                        logger.debug(f"Next transport arrives in {waiting_time} minutes")
+                    else:
+                        logger.debug(f"Departure time has passed by {abs(waiting_time)} minutes")
+                else:
+                    logger.debug("Could not determine departure time for waiting time calculation")
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Could not calculate waiting time: {e}")
+                waiting_time = None
+            
             formatted_journey = {
                 "duration": duration,  # Total duration including waiting and transfer times
                 "start_time": self._convert_to_sydney_time(start_time) or "Unknown",
                 "end_time": self._convert_to_sydney_time(end_time) or "Unknown",
+                "waiting_time": waiting_time,  # Time to wait until first transport arrives
                 "legs": []
             }
             
@@ -157,6 +205,32 @@ class TfnswService:
                 transportation = leg.get("transportation", {})
                 origin = leg.get("origin", {})
                 destination = leg.get("destination", {})
+                
+                # Get both planned and estimated times
+                departure_planned = origin.get("departureTimePlanned")
+                departure_estimated = origin.get("departureTimeEstimated")
+                arrival_planned = destination.get("arrivalTimePlanned")
+                arrival_estimated = destination.get("arrivalTimeEstimated")
+                
+                # Calculate departure delay
+                departure_delay = None
+                if departure_planned and departure_estimated:
+                    try:
+                        planned_dt = datetime.fromisoformat(departure_planned.replace('Z', '+00:00'))
+                        estimated_dt = datetime.fromisoformat(departure_estimated.replace('Z', '+00:00'))
+                        departure_delay = int((estimated_dt - planned_dt).total_seconds() / 60)
+                    except (ValueError, TypeError) as e:
+                        logger.warning(f"Could not calculate departure delay: {e}")
+                
+                # Calculate arrival delay
+                arrival_delay = None
+                if arrival_planned and arrival_estimated:
+                    try:
+                        planned_dt = datetime.fromisoformat(arrival_planned.replace('Z', '+00:00'))
+                        estimated_dt = datetime.fromisoformat(arrival_estimated.replace('Z', '+00:00'))
+                        arrival_delay = int((estimated_dt - planned_dt).total_seconds() / 60)
+                    except (ValueError, TypeError) as e:
+                        logger.warning(f"Could not calculate arrival delay: {e}")
                 
                 # Calculate actual duration for each leg (including potential waiting time)
                 leg_duration = 0
@@ -177,20 +251,24 @@ class TfnswService:
                     "origin": {
                         "name": origin.get("name", "Unknown"),
                         "departure_time": self._convert_to_sydney_time(
-                            origin.get("departureTimePlanned", "Unknown")
-                        ),
+                            departure_estimated or departure_planned
+                        ) if departure_estimated or departure_planned else None,
                         "arrival_time": self._convert_to_sydney_time(
-                            origin.get("arrivalTimePlanned")
-                        ) if origin.get("arrivalTimePlanned") else None
+                            origin.get("arrivalTimeEstimated") or origin.get("arrivalTimePlanned")
+                        ) if origin.get("arrivalTimeEstimated") or origin.get("arrivalTimePlanned") else None,
+                        "departure_delay": departure_delay,
+                        "arrival_delay": None  # We don't calculate arrival delay for origin
                     },
                     "destination": {
                         "name": destination.get("name", "Unknown"),
                         "departure_time": self._convert_to_sydney_time(
-                            destination.get("departureTimePlanned")
-                        ) if destination.get("departureTimePlanned") else None,
+                            destination.get("departureTimeEstimated") or destination.get("departureTimePlanned")
+                        ) if destination.get("departureTimeEstimated") or destination.get("departureTimePlanned") else None,
                         "arrival_time": self._convert_to_sydney_time(
-                            destination.get("arrivalTimePlanned", "Unknown")
-                        )
+                            arrival_estimated or arrival_planned
+                        ) if arrival_estimated or arrival_planned else None,
+                        "departure_delay": None,  # We don't calculate departure delay for destination
+                        "arrival_delay": arrival_delay
                     }
                 }
                 formatted_journey["legs"].append(formatted_leg)

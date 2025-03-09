@@ -6,6 +6,8 @@ class Location(BaseModel):
     name: str = "Unknown"
     departure_time: Optional[str] = None
     arrival_time: Optional[str] = None
+    departure_delay: Optional[int] = None  # Delay in minutes for departure, positive means delayed
+    arrival_delay: Optional[int] = None    # Delay in minutes for arrival, positive means delayed
 
 class TripLeg(BaseModel):
     mode: str = "Unknown"
@@ -18,6 +20,7 @@ class Journey(BaseModel):
     duration: int = Field(ge=0, description="Total journey duration in minutes")
     start_time: str
     end_time: str
+    waiting_time: Optional[int] = Field(None, description="Time to wait until the first transport arrives (in minutes)")
     legs: List[TripLeg]
 
 class TripResponse(BaseModel):
