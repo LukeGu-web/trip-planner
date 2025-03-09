@@ -20,11 +20,10 @@ wheels/
 .installed.cfg
 *.egg
 
-# 虚拟环境
-venv/
-env/
-ENV/
-.env
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
 
 # IDE
 .idea/
@@ -33,16 +32,23 @@ ENV/
 *.swo
 .DS_Store
 
-# 测试
+# Environment
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Testing
+.pytest_cache/
 .coverage
 htmlcov/
-.pytest_cache/
-.tox/
 
-# 日志
+# Logs
 *.log
+logs/
 
-# 本地开发配置
+# Local development
 .env.local
 .env.development.local
 .env.test.local

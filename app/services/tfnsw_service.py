@@ -7,11 +7,11 @@ from urllib.parse import urlencode
 import json
 import pytz
 
-# 配置日志
+# Configure logging
 logging.basicConfig(level=settings.LOG_LEVEL)
 logger = logging.getLogger(__name__)
 
-# 设置悉尼时区
+# Set Sydney timezone
 SYDNEY_TIMEZONE = pytz.timezone('Australia/Sydney')
 
 class TfnswService:
@@ -30,7 +30,7 @@ class TfnswService:
         
         try:
             dt = datetime.fromisoformat(time_str.replace('Z', '+00:00'))
-            # 转换为悉尼时间
+            # Convert to Sydney time
             sydney_dt = dt.astimezone(SYDNEY_TIMEZONE)
             return sydney_dt.strftime("%Y%m%d"), sydney_dt.strftime("%H%M")
         except ValueError as e:
@@ -42,11 +42,11 @@ class TfnswService:
             return time_str
         
         try:
-            # 解析时间字符串（假设输入是UTC）
+            # Parse time string (assuming UTC input)
             dt = datetime.fromisoformat(time_str.replace('Z', '+00:00'))
-            # 转换为悉尼时间
+            # Convert to Sydney time
             sydney_time = dt.astimezone(SYDNEY_TIMEZONE)
-            # 返回格式化的时间字符串
+            # Return formatted time string
             return sydney_time.strftime("%Y-%m-%d %H:%M:%S %Z")
         except (ValueError, TypeError):
             return time_str
@@ -88,7 +88,7 @@ class TfnswService:
             "version": "10.2.1.42"
         }
         
-        # 构建完整的请求URL用于日志记录
+        # Build complete request URL for logging
         full_url = f"{self.base_url}/trip?{urlencode(params)}"
         logger.info(f"Making request to Transport for NSW API:")
         logger.info(f"GET@{full_url}")
@@ -104,7 +104,6 @@ class TfnswService:
                 
                 response_data = response.json()
                 logger.info(f"Response status: {response.status_code}")
-                logger.info(f"Raw response data: {json.dumps(response_data, indent=2)}")
                 return response_data
         except httpx.HTTPError as e:
             logger.error(f"HTTP request failed: {str(e)}")
@@ -122,54 +121,33 @@ class TfnswService:
             
         Returns:
             Formatted trip information with:
-            - journeys: List of journey options
-            - message: Status or information message
-            - duration: Total journey time in minutes
+            - journeys: List of journey options with calculated durations
         """
         logger.info("Starting response formatting...")
         
-        # 检查API响应中的错误信息
-        if "errorMessage" in response:
-            return {
-                "journeys": [],
-                "message": response["errorMessage"],
-            }
-            
+        # Return empty list if no journey data
         if not response or "journeys" not in response:
-            return {
-                "journeys": [],
-                "message": "No journeys found"
-            }
+            return {"journeys": []}
             
         journeys = []
         
         for journey in response.get("journeys", []):
-            logger.info(f"Processing journey: {json.dumps(journey, indent=2)}")
-            
-            # 确保时间字段始终有值并转换为悉尼时间
+            # Ensure time fields always have values and are converted to Sydney time
             start_time = journey.get("legs", [{}])[0].get("origin", {}).get("departureTimePlanned", "")
             end_time = journey.get("legs", [{}])[-1].get("destination", {}).get("arrivalTimePlanned", "")
             
-            # 处理行程时长（分钟）
+            # Calculate total duration (including waiting and transfer times)
             duration = 0
-            if "duration" in journey:
-                try:
-                    # 尝试直接从API响应中获取分钟数
-                    duration = int(journey["duration"])
-                except (ValueError, TypeError):
-                    # 如果失败，尝试计算起止时间的差值
-                    try:
-                        if start_time and end_time:
-                            start_dt = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
-                            end_dt = datetime.fromisoformat(end_time.replace('Z', '+00:00'))
-                            duration = int((end_dt - start_dt).total_seconds() / 60)
-                    except (ValueError, TypeError):
-                        duration = 0
-            
-            logger.info(f"Calculated duration: {duration} minutes")
+            try:
+                if start_time and end_time:
+                    start_dt = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
+                    end_dt = datetime.fromisoformat(end_time.replace('Z', '+00:00'))
+                    duration = int((end_dt - start_dt).total_seconds() / 60)
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Could not calculate duration: {e}")
             
             formatted_journey = {
-                "duration": duration,
+                "duration": duration,  # Total duration including waiting and transfer times
                 "start_time": self._convert_to_sydney_time(start_time) or "Unknown",
                 "end_time": self._convert_to_sydney_time(end_time) or "Unknown",
                 "legs": []
@@ -180,9 +158,22 @@ class TfnswService:
                 origin = leg.get("origin", {})
                 destination = leg.get("destination", {})
                 
+                # Calculate actual duration for each leg (including potential waiting time)
+                leg_duration = 0
+                try:
+                    leg_start = origin.get("departureTimePlanned")
+                    leg_end = destination.get("arrivalTimePlanned")
+                    if leg_start and leg_end:
+                        leg_start_dt = datetime.fromisoformat(leg_start.replace('Z', '+00:00'))
+                        leg_end_dt = datetime.fromisoformat(leg_end.replace('Z', '+00:00'))
+                        leg_duration = int((leg_end_dt - leg_start_dt).total_seconds() / 60)
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"Could not calculate leg duration: {e}")
+                
                 formatted_leg = {
                     "mode": transportation.get("product", {}).get("name", "Unknown"),
                     "line": transportation.get("number", ""),
+                    "duration": leg_duration,  # Actual duration for this leg
                     "origin": {
                         "name": origin.get("name", "Unknown"),
                         "departure_time": self._convert_to_sydney_time(
@@ -205,27 +196,10 @@ class TfnswService:
                 formatted_journey["legs"].append(formatted_leg)
             
             journeys.append(formatted_journey)
-        
-        # 构建响应消息
-        message = None
-        if response.get("messages"):
-            messages = []
-            for msg in response["messages"]:
-                if isinstance(msg, dict) and "text" in msg:
-                    messages.append(msg["text"])
-                elif isinstance(msg, str):
-                    messages.append(msg)
-            message = "; ".join(messages) if messages else None
-        
-        if not message and response.get("status"):
-            message = response["status"]
-        
-        if not message:
-            message = "Trip plan retrieved successfully"
             
-        logger.info(f"Final message: {message}")
-            
-        return {
-            "journeys": journeys,
-            "message": message
-        } 
+        formatted_response = {
+            "journeys": journeys
+        }
+        
+        logger.info(f"Response formatting completed. Processed {len(journeys)} journeys.")
+        return formatted_response 

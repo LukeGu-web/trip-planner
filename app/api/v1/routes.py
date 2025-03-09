@@ -15,6 +15,15 @@ async def get_trip_plan(
 ):
     """
     Get trip planning information between two locations
+    
+    Args:
+        from_location: Starting location (stop name or ID)
+        to_location: Destination location (stop name or ID)
+        departure_time: Optional departure time in ISO format (e.g., 2024-03-09T08:30:00)
+        arrival_time: Optional arrival time in ISO format (e.g., 2024-03-09T08:30:00)
+        
+    Returns:
+        List of possible journeys with timing and route information
     """
     try:
         # Validate request using Pydantic model
@@ -26,7 +35,7 @@ async def get_trip_plan(
         )
         request.validate_times()
         
-        # Get raw response from Transport for NSW API
+        # Get response from Transport for NSW API
         response = await tfnsw_service.get_trip_plan(
             from_location=request.from_location,
             to_location=request.to_location,
@@ -35,9 +44,7 @@ async def get_trip_plan(
         )
         
         # Format the response
-        formatted_response = tfnsw_service.format_trip_response(response)
-        
-        return TripResponse(**formatted_response)
+        return tfnsw_service.format_trip_response(response)
     
     except ValueError as e:
         raise HTTPException(
@@ -47,5 +54,5 @@ async def get_trip_plan(
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to get trip plan: {str(e)}"
+            detail=str(e)
         ) 

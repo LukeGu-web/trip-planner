@@ -10,24 +10,24 @@ class Location(BaseModel):
 class TripLeg(BaseModel):
     mode: str = "Unknown"
     line: Optional[str] = None
+    duration: int = 0  # Duration in minutes
     origin: Location
     destination: Location
 
 class Journey(BaseModel):
-    duration: int = Field(ge=0)
-    start_time: str = "Unknown"
-    end_time: str = "Unknown"
+    duration: int = Field(ge=0, description="Total journey duration in minutes")
+    start_time: str
+    end_time: str
     legs: List[TripLeg]
 
 class TripResponse(BaseModel):
     journeys: List[Journey] = []
-    message: Optional[str] = None
 
 class TripRequest(BaseModel):
     from_location: str = Field(..., description="Starting location")
     to_location: str = Field(..., description="Destination location")
-    departure_time: Optional[str] = Field(None, description="Departure time in ISO format (e.g., 2024-01-20T09:00:00)")
-    arrival_time: Optional[str] = Field(None, description="Arrival time in ISO format (e.g., 2024-01-20T09:00:00)")
+    departure_time: Optional[str] = Field(None, description="Departure time in ISO format (e.g., 2024-03-20T09:00:00)")
+    arrival_time: Optional[str] = Field(None, description="Arrival time in ISO format (e.g., 2024-03-20T09:00:00)")
 
     def validate_times(self) -> None:
         """Validate time formats and logic"""
@@ -39,4 +39,4 @@ class TripRequest(BaseModel):
                 try:
                     datetime.fromisoformat(time_str.replace('Z', '+00:00'))
                 except ValueError:
-                    raise ValueError("Time must be in ISO format (e.g., 2024-01-20T09:00:00)") 
+                    raise ValueError("Time must be in ISO format (e.g., 2024-03-20T09:00:00)") 
