@@ -6,6 +6,7 @@ import logging
 from urllib.parse import urlencode
 import json
 import pytz
+from app.services.opal_fare_service import OpalFareService
 
 # Configure logging
 logging.basicConfig(level=settings.log_level)
@@ -26,6 +27,7 @@ class TfnswService:
             "Authorization": f"apikey {api_key}",
             "Accept": "application/json"
         }
+        self.opal_service = OpalFareService()
         logger.debug(f"Initialized TfnswService with base URL: {self.base_url}")
     
     def _format_time(self, time_str: Optional[str]) -> tuple[str, str]:
@@ -56,6 +58,30 @@ class TfnswService:
             return sydney_time.strftime("%Y-%m-%d %H:%M:%S %Z")
         except (ValueError, TypeError):
             return time_str
+    
+    def _is_off_peak_time(self, dt: datetime) -> bool:
+        """
+        Check if the given time is during off-peak hours
+        Off-peak times are:
+        - Weekdays: before 06:30, 10:00-15:00, after 19:00
+        - Weekends: all day
+        """
+        weekday = dt.weekday()  # Monday is 0, Sunday is 6
+        hour = dt.hour
+        minute = dt.minute
+        
+        # Weekend (Saturday = 5, Sunday = 6)
+        if weekday >= 5:
+            return True
+            
+        # Weekday off-peak times
+        if (hour < 6 or  # Before 6:30
+            (hour == 6 and minute < 30) or  # Before 6:30
+            (10 <= hour < 15) or  # 10:00-15:00
+            hour >= 19):  # After 19:00
+            return True
+            
+        return False
     
     async def get_trip_plan(self, 
                           from_location: str,
@@ -248,102 +274,64 @@ class TfnswService:
             
             formatted_journey = {
                 "duration": duration,  # Total duration including waiting and transfer times
-                "start_time": self._convert_to_sydney_time(start_time) or "Unknown",
-                "end_time": self._convert_to_sydney_time(end_time) or "Unknown",
-                "waiting_time": waiting_time,  # Time to wait until first transport arrives
+                "start_time": self._convert_to_sydney_time(start_time),
+                "end_time": self._convert_to_sydney_time(end_time),
+                "waiting_time": waiting_time,
                 "legs": [],
-                "stopSequence": []  # Initialize stop sequence list
+                "stopSequence": []
             }
             
-            # Process stop sequence for all legs
+            # Calculate fare if it's a train journey
+            if any(leg.get("transportation", {}).get("product", {}).get("class") in [1, 2] for leg in journey.get("legs", [])):
+                origin_station = journey["legs"][0]["origin"]["name"]
+                destination_station = journey["legs"][-1]["destination"]["name"]
+                
+                # Check if the journey is during off-peak hours
+                departure_time = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
+                sydney_tz = pytz.timezone('Australia/Sydney')
+                departure_time = departure_time.astimezone(sydney_tz)
+                
+                is_off_peak = self._is_off_peak_time(departure_time)
+                fee_info = self.opal_service.calculate_fare(origin_station, destination_station, is_off_peak)
+                
+                if fee_info:
+                    formatted_journey["fee"] = fee_info["total_fare"]
+            else:
+                formatted_journey["fee"] = None
+            
+            # Process each leg of the journey
             for leg in journey.get("legs", []):
-                # Process existing leg information
-                transportation = leg.get("transportation", {})
-                origin = leg.get("origin", {})
-                destination = leg.get("destination", {})
-                
-                # Get stop sequence for this leg
-                stops = leg.get("stopSequence", [])
-                for stop in stops:
-                    stop_info = {
-                        "disassembledName": stop.get("disassembledName", ""),
-                        "arrivalTimePlanned": self._convert_to_sydney_time(stop.get("arrivalTimePlanned"))
-                    }
-                    formatted_journey["stopSequence"].append(stop_info)
-                
-                # Continue with existing leg formatting
-                # Get both planned and estimated times
-                departure_planned = origin.get("departureTimePlanned")
-                departure_estimated = origin.get("departureTimeEstimated")
-                arrival_planned = destination.get("arrivalTimePlanned")
-                arrival_estimated = destination.get("arrivalTimeEstimated")
-                
-                # Calculate departure delay
-                departure_delay = None
-                if departure_planned and departure_estimated:
-                    try:
-                        planned_dt = datetime.fromisoformat(departure_planned.replace('Z', '+00:00'))
-                        estimated_dt = datetime.fromisoformat(departure_estimated.replace('Z', '+00:00'))
-                        departure_delay = int((estimated_dt - planned_dt).total_seconds() / 60)
-                    except (ValueError, TypeError) as e:
-                        logger.warning(f"Could not calculate departure delay: {e}")
-                
-                # Calculate arrival delay
-                arrival_delay = None
-                if arrival_planned and arrival_estimated:
-                    try:
-                        planned_dt = datetime.fromisoformat(arrival_planned.replace('Z', '+00:00'))
-                        estimated_dt = datetime.fromisoformat(arrival_estimated.replace('Z', '+00:00'))
-                        arrival_delay = int((estimated_dt - planned_dt).total_seconds() / 60)
-                    except (ValueError, TypeError) as e:
-                        logger.warning(f"Could not calculate arrival delay: {e}")
-                
-                # Calculate actual duration for each leg (including potential waiting time)
-                leg_duration = 0
-                try:
-                    leg_start = origin.get("departureTimePlanned")
-                    leg_end = destination.get("arrivalTimePlanned")
-                    if leg_start and leg_end:
-                        leg_start_dt = datetime.fromisoformat(leg_start.replace('Z', '+00:00'))
-                        leg_end_dt = datetime.fromisoformat(leg_end.replace('Z', '+00:00'))
-                        leg_duration = int((leg_end_dt - leg_start_dt).total_seconds() / 60)
-                except (ValueError, TypeError) as e:
-                    logger.warning(f"Could not calculate leg duration: {e}")
-                
                 formatted_leg = {
-                    "mode": transportation.get("product", {}).get("name", "Unknown"),
-                    "line": transportation.get("number", ""),
-                    "duration": leg_duration,  # Actual duration for this leg
+                    "mode": leg.get("transportation", {}).get("product", {}).get("name", "Unknown"),
+                    "line": leg.get("transportation", {}).get("disassembledName", "Unknown"),
+                    "duration": leg.get("duration", 0),
                     "origin": {
-                        "name": origin.get("name", "Unknown"),
-                        "departure_time": self._convert_to_sydney_time(
-                            departure_estimated or departure_planned
-                        ) if departure_estimated or departure_planned else None,
-                        "arrival_time": self._convert_to_sydney_time(
-                            origin.get("arrivalTimeEstimated") or origin.get("arrivalTimePlanned")
-                        ) if origin.get("arrivalTimeEstimated") or origin.get("arrivalTimePlanned") else None,
-                        "departure_delay": departure_delay,
-                        "arrival_delay": None  # We don't calculate arrival delay for origin
+                        "name": leg.get("origin", {}).get("name", "Unknown"),
+                        "departure_time": self._convert_to_sydney_time(leg.get("origin", {}).get("departureTimePlanned")),
+                        "arrival_time": self._convert_to_sydney_time(leg.get("origin", {}).get("arrivalTimePlanned")),
+                        "departure_delay": leg.get("origin", {}).get("departureDelay", 0),
+                        "arrival_delay": leg.get("origin", {}).get("arrivalDelay", 0)
                     },
                     "destination": {
-                        "name": destination.get("name", "Unknown"),
-                        "departure_time": self._convert_to_sydney_time(
-                            destination.get("departureTimeEstimated") or destination.get("departureTimePlanned")
-                        ) if destination.get("departureTimeEstimated") or destination.get("departureTimePlanned") else None,
-                        "arrival_time": self._convert_to_sydney_time(
-                            arrival_estimated or arrival_planned
-                        ) if arrival_estimated or arrival_planned else None,
-                        "departure_delay": None,  # We don't calculate departure delay for destination
-                        "arrival_delay": arrival_delay
+                        "name": leg.get("destination", {}).get("name", "Unknown"),
+                        "departure_time": self._convert_to_sydney_time(leg.get("destination", {}).get("departureTimePlanned")),
+                        "arrival_time": self._convert_to_sydney_time(leg.get("destination", {}).get("arrivalTimePlanned")),
+                        "departure_delay": leg.get("destination", {}).get("departureDelay", 0),
+                        "arrival_delay": leg.get("destination", {}).get("arrivalDelay", 0)
                     }
                 }
                 formatted_journey["legs"].append(formatted_leg)
+                
+                # Add stop sequence if available
+                if "stopSequence" in leg:
+                    for stop in leg["stopSequence"]:
+                        formatted_stop = {
+                            "disassembledName": stop.get("disassembledName", "Unknown"),
+                            "arrivalTimePlanned": self._convert_to_sydney_time(stop.get("arrivalTimePlanned"))
+                        }
+                        formatted_journey["stopSequence"].append(formatted_stop)
             
             journeys.append(formatted_journey)
-            
-        formatted_response = {
-            "journeys": journeys
-        }
         
         logger.info(f"Response formatting completed. Processed {len(journeys)} journeys.")
-        return formatted_response 
+        return {"journeys": journeys} 
