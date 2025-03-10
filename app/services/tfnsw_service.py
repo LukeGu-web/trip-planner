@@ -251,14 +251,27 @@ class TfnswService:
                 "start_time": self._convert_to_sydney_time(start_time) or "Unknown",
                 "end_time": self._convert_to_sydney_time(end_time) or "Unknown",
                 "waiting_time": waiting_time,  # Time to wait until first transport arrives
-                "legs": []
+                "legs": [],
+                "stopSequence": []  # Initialize stop sequence list
             }
             
+            # Process stop sequence for all legs
             for leg in journey.get("legs", []):
+                # Process existing leg information
                 transportation = leg.get("transportation", {})
                 origin = leg.get("origin", {})
                 destination = leg.get("destination", {})
                 
+                # Get stop sequence for this leg
+                stops = leg.get("stopSequence", [])
+                for stop in stops:
+                    stop_info = {
+                        "disassembledName": stop.get("disassembledName", ""),
+                        "arrivalTimePlanned": self._convert_to_sydney_time(stop.get("arrivalTimePlanned"))
+                    }
+                    formatted_journey["stopSequence"].append(stop_info)
+                
+                # Continue with existing leg formatting
                 # Get both planned and estimated times
                 departure_planned = origin.get("departureTimePlanned")
                 departure_estimated = origin.get("departureTimeEstimated")

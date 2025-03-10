@@ -16,12 +16,18 @@ class TripLeg(BaseModel):
     origin: Location
     destination: Location
 
+class StopSequence(BaseModel):
+    disassembledName: str
+    arrivalTimePlanned: Optional[str] = None
+
 class Journey(BaseModel):
+    journey_id: str = Field(..., description="Unique identifier for the journey")
     duration: int = Field(ge=0, description="Total journey duration in minutes")
     start_time: str
     end_time: str
     waiting_time: Optional[int] = Field(None, description="Time to wait until the first transport arrives (in minutes)")
     legs: List[TripLeg]
+    stopSequence: List[StopSequence] = []  # Add stop sequence to Journey
 
 class TripResponse(BaseModel):
     journeys: List[Journey] = []
