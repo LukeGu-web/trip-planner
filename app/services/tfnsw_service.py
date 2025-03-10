@@ -60,35 +60,32 @@ class TfnswService:
     async def get_trip_plan(self, 
                           from_location: str,
                           to_location: str,
-                          departure_time: str = None,
-                          arrival_time: str = None) -> Dict[str, Any]:
+                          departure_time: str = None) -> Dict[str, Any]:
         """
         Get trip planning information from Transport for NSW API
         
         Args:
             from_location: Starting location (can be stop ID or coordinates)
             to_location: Destination location (can be stop ID or coordinates)
-            departure_time: Optional departure time in ISO format
-            arrival_time: Optional arrival time in ISO format
+            departure_time: Optional reference time in ISO format
             
         Returns:
             Dict containing the trip planning response
         """
-        # Use departure_time if provided, otherwise use arrival_time
-        reference_time = departure_time or arrival_time
-        date_str, time_str = self._format_time(reference_time)
+        # Use provided time or current time as reference
+        date_str, time_str = self._format_time(departure_time)
         
         params = {
             "outputFormat": "rapidJSON",
             "coordOutputFormat": "EPSG:4326",
-            "itdTripDate": date_str,
-            "itdTripTime": time_str,
-            "itdTimeDepArr": "dep" if departure_time else "arr",
+            "itdDate": date_str,
+            "itdTime": time_str,
+            "depArrMacro": "dep",  # Always search for departures after the reference time
             "type_origin": "stop",
             "name_origin": from_location,
             "type_destination": "stop",
             "name_destination": to_location,
-            "calcNumberOfTrips": "5",
+            "calcNumberOfTrips": "10",  # Fixed number of trips to return
             "wheelchair": "false",
             "TfNSWSF": "true",
             "version": "10.2.1.42"
@@ -119,7 +116,63 @@ class TfnswService:
                 
                 response_data = response.json()
                 logger.info(f"Response status: {response.status_code}")
+                
+                # Log detailed response information
+                journey_count = len(response_data.get("journeys", []))
+                logger.info(f"Received {journey_count} journeys")
+                
+                # Filter out journeys before reference time
+                if "journeys" in response_data:
+                    reference_dt = None
+                    if departure_time:
+                        reference_dt = datetime.fromisoformat(departure_time.replace('Z', '+00:00'))
+                    else:
+                        reference_dt = datetime.now(SYDNEY_TIMEZONE)
+                    
+                    filtered_journeys = []
+                    for journey in response_data["journeys"]:
+                        if journey.get("legs"):
+                            first_leg = journey["legs"][0]
+                            departure_time = first_leg.get("origin", {}).get("departureTimePlanned")
+                            if departure_time:
+                                journey_dt = datetime.fromisoformat(departure_time.replace('Z', '+00:00'))
+                                if journey_dt >= reference_dt:
+                                    filtered_journeys.append(journey)
+                    
+                    response_data["journeys"] = filtered_journeys
+                    logger.info(f"Filtered to {len(filtered_journeys)} journeys after reference time")
+                
+                if len(response_data.get("journeys", [])) == 0:
+                    logger.warning("No journeys found. This might be due to:")
+                    logger.warning("1. No available services for the requested time period")
+                    logger.warning("2. Distance or complexity of the requested route")
+                    
+                    # Log the time span of returned journeys
+                    if journey_count > 0:
+                        journeys = response_data.get("journeys", [])
+                        first_journey = journeys[0]
+                        last_journey = journeys[-1]
+                        
+                        if first_journey.get("legs") and last_journey.get("legs"):
+                            first_time = first_journey["legs"][0]["origin"].get("departureTimePlanned", "unknown")
+                            last_time = last_journey["legs"][-1]["destination"].get("arrivalTimePlanned", "unknown")
+                            logger.info(f"Journey time span: from {first_time} to {last_time}")
+                
+                # Log system messages if any
+                if "systemMessages" in response_data:
+                    logger.info("System messages from API:")
+                    messages = response_data.get("systemMessages", {})
+                    if isinstance(messages, dict):
+                        for msg in messages.get("responseMessages", []):
+                            if isinstance(msg, dict):
+                                logger.info(f"- {msg.get('type', 'Unknown')}: {msg.get('error', 'No error message')}")
+                    elif isinstance(messages, list):
+                        for msg in messages:
+                            if isinstance(msg, dict):
+                                logger.info(f"- {msg.get('type', 'Unknown')}: {msg.get('error', 'No error message')}")
+                
                 return response_data
+                
         except httpx.HTTPError as e:
             error_msg = f"HTTP request failed: {str(e)}"
             if hasattr(e, 'response') and e.response is not None:
