@@ -21,7 +21,6 @@ class StopSequence(BaseModel):
     arrivalTimePlanned: Optional[str] = None
 
 class Journey(BaseModel):
-    journey_id: str = Field(..., description="Unique identifier for the journey")
     duration: int = Field(ge=0, description="Total journey duration in minutes")
     start_time: str
     end_time: str
