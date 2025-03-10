@@ -8,7 +8,7 @@ import json
 import pytz
 
 # Configure logging
-logging.basicConfig(level=settings.LOG_LEVEL)
+logging.basicConfig(level=settings.log_level)
 logger = logging.getLogger(__name__)
 
 # Set Sydney timezone

@@ -1,5 +1,17 @@
 from pydantic_settings import BaseSettings
 from typing import Optional
+import logging
+
+def get_log_level(log_level: str) -> int:
+    """Convert string log level to logging constant"""
+    levels = {
+        "DEBUG": logging.DEBUG,
+        "INFO": logging.INFO,
+        "WARNING": logging.WARNING,
+        "ERROR": logging.ERROR,
+        "CRITICAL": logging.CRITICAL
+    }
+    return levels.get(log_level.upper(), logging.INFO)
 
 class Settings(BaseSettings):
     # App Settings
@@ -26,5 +38,10 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+
+    @property
+    def log_level(self) -> int:
+        """Get the logging level as an integer constant"""
+        return get_log_level(self.LOG_LEVEL)
 
 settings = Settings() 
