@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from redis import Redis
+from redis.asyncio import Redis
 from dotenv import load_dotenv
 from app.core.config import settings
 from app.api.v1.routes import router as api_router
@@ -30,7 +30,7 @@ async def health_check():
     Health check endpoint
     """
     try:
-        redis_response = redis_client.ping()
+        redis_response = await redis_client.ping()
         return {
             "status": "healthy",
             "redis": "connected" if redis_response else "disconnected"
