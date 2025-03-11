@@ -33,12 +33,16 @@ class TfnswService:
     def _format_time(self, time_str: Optional[str]) -> tuple[str, str]:
         """Format time string into date and time components"""
         if not time_str:
-            now = SYDNEY_TIMEZONE.localize(datetime.now())
+            now = datetime.now(SYDNEY_TIMEZONE)
             return now.strftime("%Y%m%d"), now.strftime("%H%M")
         
         try:
-            dt = datetime.fromisoformat(time_str.replace('Z', '+00:00'))
-            # Convert to Sydney time
+            # Parse the input time string
+            dt = datetime.fromisoformat(time_str)
+            # If the datetime is naive (no timezone info), assume it's Sydney time
+            if dt.tzinfo is None:
+                dt = SYDNEY_TIMEZONE.localize(dt)
+            # Convert to Sydney time if it's in a different timezone
             sydney_dt = dt.astimezone(SYDNEY_TIMEZONE)
             return sydney_dt.strftime("%Y%m%d"), sydney_dt.strftime("%H%M")
         except ValueError as e:
@@ -151,7 +155,11 @@ class TfnswService:
                 if "journeys" in response_data:
                     reference_dt = None
                     if departure_time:
-                        reference_dt = datetime.fromisoformat(departure_time.replace('Z', '+00:00'))
+                        # Parse the input time string
+                        reference_dt = datetime.fromisoformat(departure_time)
+                        # If the datetime is naive (no timezone info), assume it's Sydney time
+                        if reference_dt.tzinfo is None:
+                            reference_dt = SYDNEY_TIMEZONE.localize(reference_dt)
                     else:
                         reference_dt = datetime.now(SYDNEY_TIMEZONE)
                     
@@ -162,6 +170,7 @@ class TfnswService:
                             departure_time = first_leg.get("origin", {}).get("departureTimePlanned")
                             if departure_time:
                                 journey_dt = datetime.fromisoformat(departure_time.replace('Z', '+00:00'))
+                                journey_dt = journey_dt.astimezone(SYDNEY_TIMEZONE)
                                 if journey_dt >= reference_dt:
                                     filtered_journeys.append(journey)
                     
