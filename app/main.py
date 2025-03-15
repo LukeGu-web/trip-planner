@@ -10,7 +10,8 @@ load_dotenv()
 app = FastAPI(
     title=settings.APP_NAME,
     description="Backend for Frontend service for Transport for NSW Trip Planner API",
-    version=settings.APP_VERSION
+    version=settings.APP_VERSION,
+    root_path="/route-wise"
 )
 
 # Redis connection
