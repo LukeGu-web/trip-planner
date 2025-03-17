@@ -3,41 +3,16 @@ from datetime import datetime
 import logging
 from typing import Optional, Tuple
 
+from app.utils.public_holidays import (
+    get_holidays_for_year, 
+    HOLIDAYS_BY_YEAR
+)
+
 # Configure logging
 logger = logging.getLogger(__name__)
 
 # Set Sydney timezone
 SYDNEY_TIMEZONE = pytz.timezone('Australia/Sydney')
-
-# NSW Public Holidays 2024
-PUBLIC_HOLIDAYS_2024 = {
-    "New Year's Day": "2024-01-01",
-    "Australia Day": "2024-01-26",
-    "Good Friday": "2024-03-29",
-    "Easter Saturday": "2024-03-30",
-    "Easter Sunday": "2024-03-31",
-    "Easter Monday": "2024-04-01",
-    "Anzac Day": "2024-04-25",
-    "King's Birthday": "2024-06-10",
-    "Labour Day": "2024-10-07",
-    "Christmas Day": "2024-12-25",
-    "Boxing Day": "2024-12-26"
-}
-
-# NSW Public Holidays 2025
-PUBLIC_HOLIDAYS_2025 = {
-    "New Year's Day": "2025-01-01",
-    "Australia Day": "2025-01-27",
-    "Good Friday": "2025-04-18",
-    "Easter Saturday": "2025-04-19",
-    "Easter Sunday": "2025-04-20",
-    "Easter Monday": "2025-04-21",
-    "Anzac Day": "2025-04-25",
-    "King's Birthday": "2025-06-09",
-    "Labour Day": "2025-10-06",
-    "Christmas Day": "2025-12-25",
-    "Boxing Day": "2025-12-26"
-}
 
 def format_time(time_str: Optional[str]) -> Tuple[str, str]:
     """
@@ -101,11 +76,15 @@ def is_public_holiday(dt: datetime) -> bool:
     # Format date as YYYY-MM-DD
     date_str = dt.strftime("%Y-%m-%d")
     
-    # Check in both 2024 and 2025 holiday lists
-    if date_str in PUBLIC_HOLIDAYS_2024.values() or date_str in PUBLIC_HOLIDAYS_2025.values():
-        logger.debug(f"Date {date_str} is a public holiday")
+    # Get holidays for the specific year
+    year = dt.year
+    holidays = get_holidays_for_year(year)
+    
+    # Check if date is in holidays
+    if date_str in holidays.values():
+        logger.debug(f"Date {date_str} is a public holiday in {year}")
         return True
-        
+    
     logger.debug(f"Date {date_str} is not a public holiday")
     return False
 
