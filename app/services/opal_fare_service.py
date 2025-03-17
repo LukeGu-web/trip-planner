@@ -113,6 +113,11 @@ class OpalFareService:
             fare_band = self.get_fare_band(distance)
             base_fare = self.rail_fare_bands[fare_band]
             
+            # Calculate off-peak fare with 30% discount
+            off_peak_fare = None
+            if is_off_peak:
+                off_peak_fare = round(base_fare * (1 - self.off_peak_discount), 2)
+            
             # Calculate access fees
             origin_access_fee = self.calculate_access_fee(origin)
             destination_access_fee = self.calculate_access_fee(destination)
@@ -122,10 +127,10 @@ class OpalFareService:
                 "distance": distance,
                 "fare_band": fare_band,
                 "base_fare": base_fare,
-                "off_peak_fare": round(base_fare * (1 - self.off_peak_discount), 2) if is_off_peak else None,
+                "off_peak_fare": off_peak_fare,
                 "access_fee": total_access_fee,
                 "total_fare": round(base_fare + total_access_fee, 2),
-                "total_off_peak_fare": round(base_fare * (1 - self.off_peak_discount) + total_access_fee, 2) if is_off_peak else None
+                "total_off_peak_fare": round(off_peak_fare + total_access_fee, 2) if is_off_peak else None
             }
             
             logger.info(f"Calculated fare for {origin} to {destination}: {result}")
