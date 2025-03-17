@@ -1,8 +1,10 @@
-from fastapi import APIRouter, HTTPException, Depends
-from app.services.tfnsw_service import TfnswService
-from app.schemas.trip import TripRequest, TripResponse
-from app.core.deps import get_tfnsw_service
 import logging
+from typing import Dict, Any, Optional
+from fastapi import APIRouter, Depends, HTTPException
+
+from app.core.deps import get_tfnsw_service
+from app.services.tfnsw_service import TfnswService
+from app.models.trip import TripRequest, TripResponse
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -11,53 +13,48 @@ logger = logging.getLogger(__name__)
 async def get_trip_plan(
     from_location: str,
     to_location: str,
-    departure_time: str = None,
+    departure_time: Optional[str] = None,
     tfnsw_service: TfnswService = Depends(get_tfnsw_service)
-):
+) -> Dict[str, Any]:
     """
-    Get trip planning information between two locations in Sydney using Transport for NSW API
+    Get trip planning information between two locations
     
     Args:
         from_location: Starting location (stop name or ID)
         to_location: Destination location (stop name or ID)
-        departure_time: Optional reference time in ISO format (e.g., 2024-03-09T08:30:00)
+        departure_time: Optional departure time in ISO format
         
     Returns:
-        List of possible journeys with timing and route information
+        Trip planning information
     """
-    logger.info(f"Received Sydney trip plan request: from={from_location} to={to_location} "
-                f"departure_time={departure_time}")
-    
     try:
-        # Validate request using Pydantic model
-        request = TripRequest(
+        logger.info(f"Received trip plan request: from {from_location} to {to_location}, time: {departure_time or 'now'}")
+        
+        # Validate request
+        trip_request = TripRequest(
             from_location=from_location,
             to_location=to_location,
             departure_time=departure_time
         )
-        request.validate_request()
+        trip_request.validate_request()
         logger.debug("Request validation successful")
         
-        # Get response from Transport for NSW API
+        # Get trip plan
         response = await tfnsw_service.get_trip_plan(
-            from_location=request.from_location,
-            to_location=request.to_location,
-            departure_time=request.departure_time
+            trip_request.from_location,
+            trip_request.to_location,
+            trip_request.departure_time
         )
         
-        # Format the response
+        # Format response
         formatted_response = tfnsw_service.format_trip_response(response)
         logger.info(f"Found {len(formatted_response['journeys'])} possible journeys")
         
         return formatted_response
-    
+        
     except ValueError as e:
-        raise HTTPException(
-            status_code=400,
-            detail=str(e)
-        )
+        logger.error(f"Request validation failed: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        ) 
+        logger.error(f"Failed to get trip plan: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get trip plan: {str(e)}") 

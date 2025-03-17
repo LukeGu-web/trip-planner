@@ -2,6 +2,7 @@ import json
 import logging
 from pathlib import Path
 import re
+from typing import Dict, Optional, Tuple, Any
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ class OpalFareService:
         # Off-peak discount (30% for trains)
         self.off_peak_discount = 0.30
     
-    def load_distance_map(self):
+    def load_distance_map(self) -> None:
         """Load the distance map from JSON file"""
         try:
             file_path = Path("app/data/distance_map.json")
@@ -55,7 +56,7 @@ class OpalFareService:
         logger.debug(f"Cleaned station name from '{original_name}' to '{station_name}'")
         return station_name
     
-    def get_station_distance(self, origin: str, destination: str) -> float:
+    def get_station_distance(self, origin: str, destination: str) -> Optional[float]:
         """Get the distance between two stations"""
         try:
             # Clean station names
@@ -77,7 +78,7 @@ class OpalFareService:
             logger.info(f"Found distance between {clean_origin} and {clean_destination}: {distance}km")
             return float(distance)
         except Exception as e:
-            logger.error(f"Error finding distance between {clean_origin} and {clean_destination}: {e}")
+            logger.error(f"Error finding distance between {origin} and {destination}: {e}")
             return None
     
     def get_fare_band(self, distance: float) -> str:
@@ -101,7 +102,7 @@ class OpalFareService:
         clean_station = self.clean_station_name(station_name)
         return self.station_access_fees.get(clean_station, 0.0)
     
-    def calculate_fare(self, origin: str, destination: str, is_off_peak: bool = False) -> dict:
+    def calculate_fare(self, origin: str, destination: str, is_off_peak: bool = False) -> Optional[Dict[str, Any]]:
         """Calculate the Opal fare between two stations"""
         try:
             logger.info(f"Calculating fare from {origin} to {destination} (off-peak: {is_off_peak})")
