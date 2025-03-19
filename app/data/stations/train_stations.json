@@ -1,5 +1,5 @@
 {
-  "Central": { "en": "Central", "zh": "中央", "type": "Train" },
+  "Central": { "en": "Central", "zh": "中央车站", "type": "Train" },
   "Town Hall": { "en": "Town Hall", "zh": "市政厅", "type": "Train" },
   "Wynyard": { "en": "Wynyard", "zh": "温亚德", "type": "Train" },
   "Circular Quay": { "en": "Circular Quay", "zh": "环形码头", "type": "Train" },
