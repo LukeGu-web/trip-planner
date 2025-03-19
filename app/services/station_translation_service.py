@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 from typing import Dict, Optional
 
 logger = logging.getLogger(__name__)
@@ -70,21 +71,27 @@ class StationTranslationService:
         return transport_mode
 
     def _clean_station_name(self, name: str) -> str:
-        """清理站名，移除常见的后缀和前缀"""
-        replacements = [
+        """清理站名，移除常见后缀和不必要的信息"""
+        # 移除常见后缀
+        suffixes = [
             " Station",
-            " stop",
-            " wharf",
-            " terminal",
+            " LR",  # Light Rail
             ", Sydney",
-            ", North Sydney",
-            ", NSW",
-            ", Chatswood"  # 处理特殊情况
+            " Platform",
+            " platform",
+            " Side A",
+            " Side B",
+            " Wharf",  # 轮渡码头
         ]
-        cleaned = name
-        for r in replacements:
-            cleaned = cleaned.replace(r, "")
-        return cleaned.strip()
+        
+        cleaned_name = name
+        for suffix in suffixes:
+            cleaned_name = cleaned_name.replace(suffix, "")
+            
+        # 移除括号内的内容
+        cleaned_name = re.sub(r'\s*\([^)]*\)', '', cleaned_name)
+        
+        return cleaned_name.strip()
 
     def _find_translation(self, name: str, language_code: str) -> Optional[str]:
         """在所有翻译中查找站名的翻译"""
@@ -99,7 +106,11 @@ class StationTranslationService:
         """翻译单个站台名称"""
         logger.debug(f"Translating station name: '{station_name}' for mode: '{transport_mode}' to language: '{language_code}'")
         
-        # 如果语言代码是英文或翻译数据不存在，返回原始名称
+        # 如果语言代码不支持或是英文，返回原始名称
+        if language_code not in self.available_languages:
+            logger.warning(f"Unsupported language code: {language_code}, falling back to 'en'")
+            language_code = "en"
+            
         if language_code == "en":
             return station_name
 
@@ -116,9 +127,17 @@ class StationTranslationService:
                 translated_parts.append(translated_part)
                 continue
                 
+            # 处理Side A/B
+            if "Side" in part:
+                side = part.strip()[-1]  # 获取A或B
+                translated_part = f"侧{side}" if language_code == "zh" else part
+                translated_parts.append(translated_part)
+                continue
+                
             # 清理并翻译站名
             clean_name = self._clean_station_name(part)
             original_has_station = "Station" in part
+            original_has_wharf = "Wharf" in part
             
             # 尝试查找翻译
             translation = None
@@ -134,8 +153,12 @@ class StationTranslationService:
                     logger.debug(f"Found translation in all modes for '{clean_name}': '{translation}'")
             
             if translation:
-                if language_code == "zh" and original_has_station:
-                    translation += "站"
+                # 根据原始名称中的后缀添加对应的翻译
+                if language_code == "zh":
+                    if original_has_station:
+                        translation += "站"
+                    elif original_has_wharf:
+                        translation += "码头"
                 translated_parts.append(translation)
             else:
                 logger.warning(f"No translation found for '{clean_name}' in any mode")
