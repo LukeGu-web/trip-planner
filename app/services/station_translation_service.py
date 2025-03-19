@@ -42,18 +42,31 @@ class StationTranslationService:
 
     def _get_transport_mode(self, mode: str) -> Optional[str]:
         """根据交通工具名称返回对应的翻译文件类型"""
+        if not mode:
+            logger.warning("Transport mode is empty")
+            return None
+            
         mode_lower = mode.lower()
-        mode_mapping = {
-            "sydney trains network": "train",
-            "sydney metro network": "metro",
-            "metro north west": "metro",
-            "sydney metro": "metro",
-            "ferry": "ferry",
-            "light rail": "lightrail",
-            "trainlink": "trainlink"
-        }
-        transport_mode = mode_mapping.get(mode_lower)
-        logger.debug(f"Mapped transport mode '{mode}' to '{transport_mode}'")
+        logger.debug(f"Looking up transport mode mapping for: '{mode_lower}'")
+        
+        # 使用关键词匹配来判断交通工具类型
+        if "metro" in mode_lower:  # metro是特例，不使用复数形式
+            transport_mode = "metro"
+        elif "trains" in mode_lower or "train" in mode_lower:
+            transport_mode = "train"
+        elif "ferries" in mode_lower or "ferry" in mode_lower:
+            transport_mode = "ferry"
+        elif "light rail" in mode_lower or "lightrail" in mode_lower:
+            transport_mode = "lightrail"
+        elif "trainlink" in mode_lower:
+            transport_mode = "trainlink"
+        else:
+            transport_mode = None
+            logger.warning(f"Unknown transport mode: '{mode}', available modes: train, metro, ferry, lightrail, trainlink")
+            
+        if transport_mode:
+            logger.info(f"Successfully mapped transport mode '{mode}' to '{transport_mode}'")
+            
         return transport_mode
 
     def _clean_station_name(self, name: str) -> str:
