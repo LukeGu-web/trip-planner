@@ -14,6 +14,7 @@ async def get_trip_plan(
     from_location: str,
     to_location: str,
     departure_time: Optional[str] = None,
+    language_code: str = "en",
     tfnsw_service: TfnswService = Depends(get_tfnsw_service)
 ) -> Dict[str, Any]:
     """
@@ -23,12 +24,13 @@ async def get_trip_plan(
         from_location: Starting location (stop name or ID)
         to_location: Destination location (stop name or ID)
         departure_time: Optional departure time in ISO format
+        language_code: Language code for station name translations (default: "en")
         
     Returns:
         Trip planning information
     """
     try:
-        logger.info(f"Received trip plan request: from {from_location} to {to_location}, time: {departure_time or 'now'}")
+        logger.info(f"Received trip plan request: from {from_location} to {to_location}, time: {departure_time or 'now'}, language: {language_code}")
         
         # Validate request
         trip_request = TripRequest(
@@ -46,8 +48,8 @@ async def get_trip_plan(
             trip_request.departure_time
         )
         
-        # Format response
-        formatted_response = tfnsw_service.format_trip_response(response)
+        # Format response with translation
+        formatted_response = tfnsw_service.format_trip_response(response, language_code)
         logger.info(f"Found {len(formatted_response['journeys'])} possible journeys")
         
         return formatted_response

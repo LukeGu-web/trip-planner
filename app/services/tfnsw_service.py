@@ -6,6 +6,7 @@ from urllib.parse import urlencode
 
 from app.core.config import settings
 from app.services.opal_fare_service import OpalFareService
+from app.services.station_translation_service import StationTranslationService
 from app.utils.date_utils import (
     SYDNEY_TIMEZONE, 
     is_off_peak_time, 
@@ -30,6 +31,7 @@ class TfnswService:
             "Accept": "application/json"
         }
         self.opal_service = OpalFareService()
+        self.translation_service = StationTranslationService()
         logger.debug(f"Initialized TfnswService with base URL: {self.base_url}")
     
     async def get_trip_plan(self, 
@@ -98,12 +100,13 @@ class TfnswService:
             logger.error(f"Failed to get trip plan: {str(e)}")
             raise
     
-    def format_trip_response(self, response: Dict[str, Any]) -> Dict[str, Any]:
+    def format_trip_response(self, response: Dict[str, Any], language_code: str = "en") -> Dict[str, Any]:
         """
         Format the raw API response into a more user-friendly structure
         
         Args:
             response: Raw API response
+            language_code: Language code for station name translations (default: "en")
             
         Returns:
             Formatted trip information with:
@@ -190,19 +193,32 @@ class TfnswService:
             
             # Process each leg of the journey
             for leg in journey.get("legs", []):
+                transport_mode = leg.get("transportation", {}).get("product", {}).get("name", "Unknown")
+                
+                # Translate station names
+                origin_name = leg.get("origin", {}).get("name", "Unknown")
+                destination_name = leg.get("destination", {}).get("name", "Unknown")
+                
+                translated_origin = self.translation_service.translate_station_names(
+                    origin_name, transport_mode, language_code
+                )
+                translated_destination = self.translation_service.translate_station_names(
+                    destination_name, transport_mode, language_code
+                )
+                
                 formatted_leg = {
-                    "mode": leg.get("transportation", {}).get("product", {}).get("name", "Unknown"),
+                    "mode": transport_mode,
                     "line": leg.get("transportation", {}).get("disassembledName", "Unknown"),
                     "duration": leg.get("duration", 0),
                     "origin": {
-                        "name": leg.get("origin", {}).get("name", "Unknown"),
+                        "name": translated_origin,
                         "departure_time": convert_to_sydney_time(leg.get("origin", {}).get("departureTimePlanned")),
                         "arrival_time": convert_to_sydney_time(leg.get("origin", {}).get("arrivalTimePlanned")),
                         "departure_delay": leg.get("origin", {}).get("departureDelay", 0),
                         "arrival_delay": leg.get("origin", {}).get("arrivalDelay", 0)
                     },
                     "destination": {
-                        "name": leg.get("destination", {}).get("name", "Unknown"),
+                        "name": translated_destination,
                         "departure_time": convert_to_sydney_time(leg.get("destination", {}).get("departureTimePlanned")),
                         "arrival_time": convert_to_sydney_time(leg.get("destination", {}).get("arrivalTimePlanned")),
                         "departure_delay": leg.get("destination", {}).get("departureDelay", 0),
@@ -214,8 +230,12 @@ class TfnswService:
                 # Add stop sequence if available
                 if "stopSequence" in leg:
                     for stop in leg["stopSequence"]:
+                        stop_name = stop.get("disassembledName", "Unknown")
+                        translated_stop = self.translation_service.translate_station_names(
+                            stop_name, transport_mode, language_code
+                        )
                         formatted_stop = {
-                            "disassembledName": stop.get("disassembledName", "Unknown"),
+                            "disassembledName": translated_stop,
                             "arrivalTimePlanned": convert_to_sydney_time(stop.get("arrivalTimePlanned"))
                         }
                         formatted_journey["stopSequence"].append(formatted_stop)
