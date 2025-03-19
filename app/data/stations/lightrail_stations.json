@@ -1,0 +1,322 @@
+{
+  "Central LR": {
+    "en": "Central LR",
+    "zh": "中央轻轨",
+    "type": "LightRail"
+  },
+  "Capitol Square LR": {
+    "en": "Capitol Square LR",
+    "zh": "国会广场轻轨",
+    "type": "LightRail"
+  },
+  "Paddys Market LR": {
+    "en": "Paddys Market LR",
+    "zh": "帕迪市场轻轨",
+    "type": "LightRail"
+  },
+  "Exhibition Centre LR": {
+    "en": "Exhibition Centre LR",
+    "zh": "展览中心轻轨",
+    "type": "LightRail"
+  },
+  "Convention LR": {
+    "en": "Convention LR",
+    "zh": "会展中心轻轨",
+    "type": "LightRail"
+  },
+  "Pyrmont Bay LR": {
+    "en": "Pyrmont Bay LR",
+    "zh": "皮尔蒙特湾轻轨",
+    "type": "LightRail"
+  },
+  "The Star LR": {
+    "en": "The Star LR",
+    "zh": "星星轻轨",
+    "type": "LightRail"
+  },
+  "John Street Square LR": {
+    "en": "John Street Square LR",
+    "zh": "约翰街广场轻轨",
+    "type": "LightRail"
+  },
+  "Fish Market LR": {
+    "en": "Fish Market LR",
+    "zh": "鱼市场轻轨",
+    "type": "LightRail"
+  },
+  "Wentworth Park LR": {
+    "en": "Wentworth Park LR",
+    "zh": "温特沃斯公园轻轨",
+    "type": "LightRail"
+  },
+  "Glebe LR": {
+    "en": "Glebe LR",
+    "zh": "格里布轻轨",
+    "type": "LightRail"
+  },
+  "Jubilee Park LR": {
+    "en": "Jubilee Park LR",
+    "zh": "禧年公园轻轨",
+    "type": "LightRail"
+  },
+  "Rozelle Bay LR": {
+    "en": "Rozelle Bay LR",
+    "zh": "罗泽尔湾轻轨",
+    "type": "LightRail"
+  },
+  "Lilyfield LR": {
+    "en": "Lilyfield LR",
+    "zh": "莉莉菲尔德轻轨",
+    "type": "LightRail"
+  },
+  "Leichhardt North LR": {
+    "en": "Leichhardt North LR",
+    "zh": "莱卡特北轻轨",
+    "type": "LightRail"
+  },
+  "Hawthorne LR": {
+    "en": "Hawthorne LR",
+    "zh": "霍桑轻轨",
+    "type": "LightRail"
+  },
+  "Marion LR": {
+    "en": "Marion LR",
+    "zh": "马里恩轻轨",
+    "type": "LightRail"
+  },
+  "Taverners Hill LR": {
+    "en": "Taverners Hill LR",
+    "zh": "塔弗纳斯山轻轨",
+    "type": "LightRail"
+  },
+  "Lewisham West LR": {
+    "en": "Lewisham West LR",
+    "zh": "刘易舍姆西轻轨",
+    "type": "LightRail"
+  },
+  "Waratah Mills LR": {
+    "en": "Waratah Mills LR",
+    "zh": "华拉塔工厂轻轨",
+    "type": "LightRail"
+  },
+  "Arlington LR": {
+    "en": "Arlington LR",
+    "zh": "阿灵顿轻轨",
+    "type": "LightRail"
+  },
+  "Dulwich Grove LR": {
+    "en": "Dulwich Grove LR",
+    "zh": "达尔威治林轻轨",
+    "type": "LightRail"
+  },
+  "Dulwich Hill LR": {
+    "en": "Dulwich Hill LR",
+    "zh": "达尔威治山轻轨",
+    "type": "LightRail"
+  },
+  "Circular Quay": {
+    "en": "Circular Quay",
+    "zh": "环形码头",
+    "type": "LightRail"
+  },
+  "Bridge Street": {
+    "en": "Bridge Street",
+    "zh": "桥街",
+    "type": "LightRail"
+  },
+  "Wynyard": {
+    "en": "Wynyard",
+    "zh": "温亚德",
+    "type": "LightRail"
+  },
+  "QVB": {
+    "en": "QVB",
+    "zh": "维多利亚女王大厦",
+    "type": "LightRail"
+  },
+  "Town Hall": {
+    "en": "Town Hall",
+    "zh": "市政厅",
+    "type": "LightRail"
+  },
+  "Chinatown": {
+    "en": "Chinatown",
+    "zh": "唐人街",
+    "type": "LightRail"
+  },
+  "Haymarket": {
+    "en": "Haymarket",
+    "zh": "干草市场",
+    "type": "LightRail"
+  },
+  "Central Chalmers Street": {
+    "en": "Central Chalmers Street",
+    "zh": "中央查尔默斯街",
+    "type": "LightRail"
+  },
+  "Surry Hills": {
+    "en": "Surry Hills",
+    "zh": "萨里山",
+    "type": "LightRail"
+  },
+  "Moore Park": {
+    "en": "Moore Park",
+    "zh": "摩尔公园",
+    "type": "LightRail"
+  },
+  "Royal Randwick": {
+    "en": "Royal Randwick",
+    "zh": "皇家兰德威克",
+    "type": "LightRail"
+  },
+  "Wansey Rd": {
+    "en": "Wansey Rd",
+    "zh": "万西路",
+    "type": "LightRail"
+  },
+  "UNSW High Street": {
+    "en": "UNSW High Street",
+    "zh": "新南威尔士大学高街",
+    "type": "LightRail"
+  },
+  "Randwick": {
+    "en": "Randwick",
+    "zh": "兰德威克",
+    "type": "LightRail"
+  },
+  "ES Marks": {
+    "en": "ES Marks",
+    "zh": "ES马克斯",
+    "type": "LightRail"
+  },
+  "Kensington": {
+    "en": "Kensington",
+    "zh": "肯辛顿",
+    "type": "LightRail"
+  },
+  "UNSW Anzac Parade": {
+    "en": "UNSW Anzac Parade",
+    "zh": "新南威尔士大学安扎克大道",
+    "type": "LightRail"
+  },
+  "Kingsford": {
+    "en": "Kingsford",
+    "zh": "金斯福德",
+    "type": "LightRail"
+  },
+  "Juniors Kingsford": {
+    "en": "Juniors Kingsford",
+    "zh": "金斯福德青少年",
+    "type": "LightRail"
+  },
+  "Newcastle In LR": {
+    "en": "Newcastle In LR",
+    "zh": "纽卡斯尔内轻轨",
+    "type": "LightRail"
+  },
+  "Honeysuckle LR": {
+    "en": "Honeysuckle LR",
+    "zh": "忍冬轻轨",
+    "type": "LightRail"
+  },
+  "Civic LR": {
+    "en": "Civic LR",
+    "zh": "市政轻轨",
+    "type": "LightRail"
+  },
+  "Crown Street LR": {
+    "en": "Crown Street LR",
+    "zh": "皇冠街轻轨",
+    "type": "LightRail"
+  },
+  "Queens Wharf LR": {
+    "en": "Queens Wharf LR",
+    "zh": "女王码头轻轨",
+    "type": "LightRail"
+  },
+  "Newcastle Bh LR ": {
+    "en": "Newcastle Bh LR ",
+    "zh": "纽卡斯尔海滩轻轨",
+    "type": "LightRail"
+  },
+  "Westmead LR": {
+    "en": "Westmead LR",
+    "zh": "西米德轻轨",
+    "type": "LightRail"
+  },
+  "Westmead Hospital LR": {
+    "en": "Westmead Hospital LR",
+    "zh": "西米德医院轻轨",
+    "type": "LightRail"
+  },
+  "Childrens Hospital LR": {
+    "en": "Childrens Hospital LR",
+    "zh": "儿童医院轻轨",
+    "type": "LightRail"
+  },
+  "Ngara LR": {
+    "en": "Ngara LR",
+    "zh": "恩加拉轻轨",
+    "type": "LightRail"
+  },
+  "Benaud Oval LR": {
+    "en": "Benaud Oval LR",
+    "zh": "贝诺椭圆形轻轨",
+    "type": "LightRail"
+  },
+  "Fennell Street LR": {
+    "en": "Fennell Street LR",
+    "zh": "费内尔街轻轨",
+    "type": "LightRail"
+  },
+  "Prince Alfred Square LR": {
+    "en": "Prince Alfred Square LR",
+    "zh": "阿尔弗雷德王子广场轻轨",
+    "type": "LightRail"
+  },
+  "Church Street LR": {
+    "en": "Church Street LR",
+    "zh": "教堂街轻轨",
+    "type": "LightRail"
+  },
+  "Parramatta Square LR": {
+    "en": "Parramatta Square LR",
+    "zh": "帕拉马塔广场轻轨",
+    "type": "LightRail"
+  },
+  "Robin Thomas LR": {
+    "en": "Robin Thomas LR",
+    "zh": "罗宾·托马斯轻轨",
+    "type": "LightRail"
+  },
+  "Tramway Avenue LR": {
+    "en": "Tramway Avenue LR",
+    "zh": "电车大道轻轨",
+    "type": "LightRail"
+  },
+  "Rosehill Gardens LR": {
+    "en": "Rosehill Gardens LR",
+    "zh": "玫瑰山花园轻轨",
+    "type": "LightRail"
+  },
+  "Yallamundi LR": {
+    "en": "Yallamundi LR",
+    "zh": "亚拉蒙迪轻轨",
+    "type": "LightRail"
+  },
+  "Dundas LR": {
+    "en": "Dundas LR",
+    "zh": "邓达斯轻轨",
+    "type": "LightRail"
+  },
+  "Telopea LR": {
+    "en": "Telopea LR",
+    "zh": "特洛皮亚轻轨",
+    "type": "LightRail"
+  },
+  "Carlingford LR": {
+    "en": "Carlingford LR",
+    "zh": "卡灵福德轻轨",
+    "type": "LightRail"
+  }
+}

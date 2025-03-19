@@ -1,0 +1,67 @@
+{
+  "Tallawong": {
+    "en": "Tallawong",
+    "zh": "塔拉旺",
+    "type": "Metro"
+  },
+  "Rouse Hill": {
+    "en": "Rouse Hill",
+    "zh": "罗斯山",
+    "type": "Metro"
+  },
+  "Kellyville": {
+    "en": "Kellyville",
+    "zh": "凯利维尔",
+    "type": "Metro"
+  },
+  "Bella Vista": {
+    "en": "Bella Vista",
+    "zh": "贝拉维斯塔",
+    "type": "Metro"
+  },
+  "Norwest": {
+    "en": "Norwest",
+    "zh": "诺韦斯特",
+    "type": "Metro"
+  },
+  "Hills Showground": {
+    "en": "Hills Showground",
+    "zh": "希尔斯展览场",
+    "type": "Metro"
+  },
+  "Castle Hill": {
+    "en": "Castle Hill",
+    "zh": "城堡山",
+    "type": "Metro"
+  },
+  "Cherrybrook": {
+    "en": "Cherrybrook",
+    "zh": "樱桃溪",
+    "type": "Metro"
+  },
+  "Crows Nest": {
+    "en": "Crows Nest",
+    "zh": "乌鸦巢",
+    "type": "Metro"
+  },
+  "Victoria Cross": {
+    "en": "Victoria Cross",
+    "zh": "维多利亚十字",
+    "type": "Metro"
+  },
+  "Barangaroo": {
+    "en": "Barangaroo",
+    "zh": "巴兰加鲁",
+    "type": "Metro"
+  },
+  "Gadigal": {
+    "en": "Gadigal",
+    "zh": "加迪加尔",
+    "type": "Metro"
+  },
+  "Waterloo": {
+    "en": "Waterloo",
+    "zh": "滑铁卢",
+    "type": "Metro"
+  }
+}

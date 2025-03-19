@@ -1,0 +1,202 @@
+{
+  "Circular Quay 2": {
+    "en": "Circular Quay 2",
+    "zh": "环形码头 2",
+    "type": "Ferry"
+  },
+  "Circular Quay 3": {
+    "en": "Circular Quay 3",
+    "zh": "环形码头 3",
+    "type": "Ferry"
+  },
+  "Circular Quay 4": {
+    "en": "Circular Quay 4",
+    "zh": "环形码头 4",
+    "type": "Ferry"
+  },
+  "Circular Quay 5": {
+    "en": "Circular Quay 5",
+    "zh": "环形码头 5",
+    "type": "Ferry"
+  },
+  "Manly": {
+    "en": "Manly",
+    "zh": "曼利",
+    "type": "Ferry"
+  },
+  "Garden Island": {
+    "en": "Garden Island",
+    "zh": "花园岛",
+    "type": "Ferry"
+  },
+  "Cockatoo Island": {
+    "en": "Cockatoo Island",
+    "zh": "鹦鹉岛",
+    "type": "Ferry"
+  },
+  "Darling Point": {
+    "en": "Darling Point",
+    "zh": "达令角",
+    "type": "Ferry"
+  },
+  "Double Bay": {
+    "en": "Double Bay",
+    "zh": "双湾",
+    "type": "Ferry"
+  },
+  "Rose Bay": {
+    "en": "Rose Bay",
+    "zh": "玫瑰湾",
+    "type": "Ferry"
+  },
+  "Watsons Bay": {
+    "en": "Watsons Bay",
+    "zh": "沃森湾",
+    "type": "Ferry"
+  },
+  "Pyrmont Bay": {
+    "en": "Pyrmont Bay",
+    "zh": "皮尔蒙特湾",
+    "type": "Ferry"
+  },
+  "Birchgrove": {
+    "en": "Birchgrove",
+    "zh": "伯奇格罗夫",
+    "type": "Ferry"
+  },
+  "Balmain": {
+    "en": "Balmain",
+    "zh": "巴尔曼",
+    "type": "Ferry"
+  },
+  "Balmain East": {
+    "en": "Balmain East",
+    "zh": "巴尔曼东",
+    "type": "Ferry"
+  },
+  "Abbotsford": {
+    "en": "Abbotsford",
+    "zh": "阿博茨福德",
+    "type": "Ferry"
+  },
+  "Chiswick": {
+    "en": "Chiswick",
+    "zh": "奇斯威克",
+    "type": "Ferry"
+  },
+  "Drummoyne": {
+    "en": "Drummoyne",
+    "zh": "德拉蒙",
+    "type": "Ferry"
+  },
+  "Huntleys Point": {
+    "en": "Huntleys Point",
+    "zh": "亨特利角",
+    "type": "Ferry"
+  },
+  "Barangaroo 1": {
+    "en": "Barangaroo 1",
+    "zh": "巴兰加鲁 1",
+    "type": "Ferry"
+  },
+  "Barangaroo 2": {
+    "en": "Barangaroo 2",
+    "zh": "巴兰加鲁 2",
+    "type": "Ferry"
+  },
+  "McMahons Point": {
+    "en": "McMahons Point",
+    "zh": "麦克马洪角",
+    "type": "Ferry"
+  },
+  "North Sydney": {
+    "en": "North Sydney",
+    "zh": "北悉尼",
+    "type": "Ferry"
+  },
+  "Milsons Point": {
+    "en": "Milsons Point",
+    "zh": "米尔森角",
+    "type": "Ferry"
+  },
+  "Kirribilli": {
+    "en": "Kirribilli",
+    "zh": "科里比利",
+    "type": "Ferry"
+  },
+  "Greenwich": {
+    "en": "Greenwich",
+    "zh": "格林威治",
+    "type": "Ferry"
+  },
+  "Mosman Bay": {
+    "en": "Mosman Bay",
+    "zh": "莫斯曼湾",
+    "type": "Ferry"
+  },
+  "South Mosman": {
+    "en": "South Mosman",
+    "zh": "南莫斯曼",
+    "type": "Ferry"
+  },
+  "Taronga Zoo": {
+    "en": "Taronga Zoo",
+    "zh": "塔朗加动物园",
+    "type": "Ferry"
+  },
+  "Neutral Bay": {
+    "en": "Neutral Bay",
+    "zh": "中立湾",
+    "type": "Ferry"
+  },
+  "Kurraba Point": {
+    "en": "Kurraba Point",
+    "zh": "库拉巴角",
+    "type": "Ferry"
+  },
+  "Cremorne Point": {
+    "en": "Cremorne Point",
+    "zh": "克里蒙角",
+    "type": "Ferry"
+  },
+  "Old Cremorne": {
+    "en": "Old Cremorne",
+    "zh": "老克里蒙",
+    "type": "Ferry"
+  },
+  "Woolwich": {
+    "en": "Woolwich",
+    "zh": "伍利奇",
+    "type": "Ferry"
+  },
+  "Kissing Point": {
+    "en": "Kissing Point",
+    "zh": "吻角",
+    "type": "Ferry"
+  },
+  "Meadowbank": {
+    "en": "Meadowbank",
+    "zh": "梅多班克",
+    "type": "Ferry"
+  },
+  "Rydalmere": {
+    "en": "Rydalmere",
+    "zh": "莱达尔米尔",
+    "type": "Ferry"
+  },
+  "Olympic Park": {
+    "en": "Olympic Park",
+    "zh": "奥林匹克公园",
+    "type": "Ferry"
+  },
+  "Cabarita": {
+    "en": "Cabarita",
+    "zh": "卡巴里塔",
+    "type": "Ferry"
+  },
+  "Parramatta": {
+    "en": "Parramatta",
+    "zh": "帕拉马塔",
+    "type": "Ferry"
+  }
+}
