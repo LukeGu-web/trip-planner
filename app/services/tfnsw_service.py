@@ -192,19 +192,38 @@ class TfnswService:
                 formatted_journey["access_fee"] = None
             
             # Process each leg of the journey
-            for leg in journey.get("legs", []):
+            legs = journey.get("legs", [])
+            for i, leg in enumerate(legs):
                 transport_mode = leg.get("transportation", {}).get("product", {}).get("name", "Unknown")
                 
-                # Translate station names
-                origin_name = leg.get("origin", {}).get("name", "Unknown")
-                destination_name = leg.get("destination", {}).get("name", "Unknown")
-                
-                translated_origin = self.translation_service.translate_station_names(
-                    origin_name, transport_mode, language_code
-                )
-                translated_destination = self.translation_service.translate_station_names(
-                    destination_name, transport_mode, language_code
-                )
+                # 处理步行换乘路段
+                if transport_mode.lower() == "footpath":
+                    # 获取前后leg的交通工具类型
+                    prev_mode = legs[i-1].get("transportation", {}).get("product", {}).get("name", "Unknown") if i > 0 else None
+                    next_mode = legs[i+1].get("transportation", {}).get("product", {}).get("name", "Unknown") if i < len(legs)-1 else None
+                    
+                    # 翻译起点（使用前一个leg的交通工具类型）
+                    origin_name = leg.get("origin", {}).get("name", "Unknown")
+                    translated_origin = self.translation_service.translate_station_names(
+                        origin_name, prev_mode or transport_mode, language_code
+                    )
+                    
+                    # 翻译终点（使用后一个leg的交通工具类型）
+                    destination_name = leg.get("destination", {}).get("name", "Unknown")
+                    translated_destination = self.translation_service.translate_station_names(
+                        destination_name, next_mode or transport_mode, language_code
+                    )
+                else:
+                    # 正常交通工具路段的翻译
+                    origin_name = leg.get("origin", {}).get("name", "Unknown")
+                    destination_name = leg.get("destination", {}).get("name", "Unknown")
+                    
+                    translated_origin = self.translation_service.translate_station_names(
+                        origin_name, transport_mode, language_code
+                    )
+                    translated_destination = self.translation_service.translate_station_names(
+                        destination_name, transport_mode, language_code
+                    )
                 
                 formatted_leg = {
                     "mode": transport_mode,
