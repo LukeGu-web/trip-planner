@@ -6,6 +6,9 @@ from typing import Dict, Optional
 logger = logging.getLogger(__name__)
 
 class StationTranslationService:
+    # 定义支持的语言代码
+    available_languages = {"en", "zh"}
+
     def __init__(self):
         self.translations: Dict[str, Dict] = {
             "train": self._load_translations("train_stations.json"),
@@ -22,6 +25,7 @@ class StationTranslationService:
         logger.info("Station translation service initialized")
         logger.debug(f"Loaded translations for modes: {list(self.translations.keys())}")
         logger.debug(f"Total unique stations: {len(self.all_translations)}")
+        logger.debug(f"Available languages: {self.available_languages}")
 
     def _load_translations(self, filename: str) -> Dict:
         """加载翻译文件"""
@@ -144,7 +148,15 @@ class StationTranslationService:
         Returns:
             翻译后的站台名称
         """
-        if not station_name or language_code == "en":
+        if not station_name:
+            return station_name
+
+        # 验证language_code是否支持，如果不支持则使用英文
+        if language_code not in self.available_languages:
+            logger.warning(f"Unsupported language code: {language_code}, falling back to 'en'")
+            language_code = "en"
+
+        if language_code == "en":
             return station_name
 
         transport_type = self._get_transport_mode(transport_mode)
