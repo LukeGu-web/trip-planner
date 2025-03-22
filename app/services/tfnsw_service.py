@@ -100,7 +100,7 @@ class TfnswService:
             logger.error(f"Failed to get trip plan: {str(e)}")
             raise
     
-    def format_trip_response(self, response: Dict[str, Any], language_code: str = "en") -> Dict[str, Any]:
+    async def format_trip_response(self, response: Dict[str, Any], language_code: str = "en") -> Dict[str, Any]:
         """
         Format the raw API response into a more user-friendly structure
         
@@ -119,6 +119,31 @@ class TfnswService:
             return {"journeys": []}
             
         journeys = []
+        
+        # 收集所有需要翻译的站名
+        stations_to_translate = []
+        for journey in response.get("journeys", []):
+            for leg in journey.get("legs", []):
+                transport_mode = leg.get("transportation", {}).get("product", {}).get("name", "Unknown")
+                # 添加起点站
+                origin_name = leg.get("origin", {}).get("name", "Unknown")
+                if origin_name != "Unknown":
+                    stations_to_translate.append((origin_name, transport_mode))
+                # 添加终点站
+                dest_name = leg.get("destination", {}).get("name", "Unknown")
+                if dest_name != "Unknown":
+                    stations_to_translate.append((dest_name, transport_mode))
+                # 添加途经站
+                for stop in leg.get("stopSequence", []):
+                    stop_name = stop.get("disassembledName", "Unknown")
+                    if stop_name != "Unknown":
+                        stations_to_translate.append((stop_name, transport_mode))
+        
+        # 批量获取翻译
+        translations = await self.translation_service.translate_station_names_batch(
+            list(set(stations_to_translate)),  # 去重
+            language_code
+        )
         
         for journey in response.get("journeys", []):
             # Ensure time fields always have values and are converted to Sydney time
@@ -192,40 +217,10 @@ class TfnswService:
                 formatted_journey["access_fee"] = None
             
             # Process each leg of the journey
-            legs = journey.get("legs", [])
-            for i, leg in enumerate(legs):
+            for leg in journey.get("legs", []):
                 transport_mode = leg.get("transportation", {}).get("product", {}).get("name", "Unknown")
-                
-                # 处理步行换乘路段
-                if transport_mode.lower() == "footpath":
-                    # 获取前后leg的交通工具类型
-                    prev_mode = legs[i-1].get("transportation", {}).get("product", {}).get("name", "Unknown") if i > 0 else None
-                    next_mode = legs[i+1].get("transportation", {}).get("product", {}).get("name", "Unknown") if i < len(legs)-1 else None
-                    
-                    # 翻译起点（使用前一个leg的交通工具类型）
-                    origin_name = leg.get("origin", {}).get("name", "Unknown")
-                    destination_name = leg.get("destination", {}).get("name", "Unknown")
-                    
-                    # 翻译起点（使用前一个leg的交通工具类型）
-                    translated_origin = self.translation_service.translate_station_names(
-                        origin_name, prev_mode or transport_mode, language_code
-                    )
-                    
-                    # 翻译终点（使用后一个leg的交通工具类型）
-                    translated_destination = self.translation_service.translate_station_names(
-                        destination_name, next_mode or transport_mode, language_code
-                    )
-                else:
-                    # 正常交通工具路段的翻译
-                    origin_name = leg.get("origin", {}).get("name", "Unknown")
-                    destination_name = leg.get("destination", {}).get("name", "Unknown")
-                    
-                    translated_origin = self.translation_service.translate_station_names(
-                        origin_name, transport_mode, language_code
-                    )
-                    translated_destination = self.translation_service.translate_station_names(
-                        destination_name, transport_mode, language_code
-                    )
+                origin_name = leg.get("origin", {}).get("name", "Unknown")
+                destination_name = leg.get("destination", {}).get("name", "Unknown")
                 
                 formatted_leg = {
                     "mode": transport_mode,
@@ -233,7 +228,7 @@ class TfnswService:
                     "duration": leg.get("duration", 0),
                     "origin": {
                         "name": origin_name,
-                        "translated_name": translated_origin,
+                        "translated_name": translations.get(origin_name, origin_name),
                         "departure_time": convert_to_sydney_time(leg.get("origin", {}).get("departureTimePlanned")),
                         "arrival_time": convert_to_sydney_time(leg.get("origin", {}).get("arrivalTimePlanned")),
                         "departure_delay": leg.get("origin", {}).get("departureDelay", 0),
@@ -241,7 +236,7 @@ class TfnswService:
                     },
                     "destination": {
                         "name": destination_name,
-                        "translated_name": translated_destination,
+                        "translated_name": translations.get(destination_name, destination_name),
                         "departure_time": convert_to_sydney_time(leg.get("destination", {}).get("departureTimePlanned")),
                         "arrival_time": convert_to_sydney_time(leg.get("destination", {}).get("arrivalTimePlanned")),
                         "departure_delay": leg.get("destination", {}).get("departureDelay", 0),
@@ -254,13 +249,9 @@ class TfnswService:
                 if "stopSequence" in leg:
                     for stop in leg["stopSequence"]:
                         stop_name = stop.get("disassembledName", "Unknown")
-                        # 使用当前leg的交通工具类型来翻译站名
-                        translated_stop = self.translation_service.translate_station_names(
-                            stop_name, transport_mode, language_code
-                        )
                         formatted_journey["stopSequence"].append({
                             "name": stop_name,
-                            "translated_name": translated_stop,
+                            "translated_name": translations.get(stop_name, stop_name),
                             "arrivalTimePlanned": convert_to_sydney_time(stop.get("arrivalTimePlanned"))
                         })
             

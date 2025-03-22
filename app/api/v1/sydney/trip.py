@@ -49,7 +49,7 @@ async def get_trip_plan(
         )
         
         # Format response with translation
-        formatted_response = tfnsw_service.format_trip_response(response, language_code)
+        formatted_response = await tfnsw_service.format_trip_response(response, language_code)
         logger.info(f"Found {len(formatted_response['journeys'])} possible journeys")
         
         return formatted_response
