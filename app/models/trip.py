@@ -27,12 +27,12 @@ class Journey(BaseModel):
     start_time: str
     end_time: str
     waiting_time: Optional[int] = Field(None, description="Time to wait until the first transport arrives (in minutes)")
-    legs: List[TripLeg]
-    stopSequence: List[StopSequence] = []  # Add stop sequence to journey
     fee: Optional[float] = Field(None, description="Total fare for the journey in AUD")
-    is_off_peak: Optional[bool] = Field(None, description="Whether the journey is during off-peak hours")
-    base_fare: Optional[float] = Field(None, description="Base fare in AUD")
-    access_fee: Optional[float] = Field(None, description="Station access fee in AUD")
+    legs: List[TripLeg]
+    # stopSequence: List[StopSequence] = [] 
+    # is_off_peak: Optional[bool] = Field(None, description="Whether the journey is during off-peak hours")
+    # base_fare: Optional[float] = Field(None, description="Base fare in AUD")
+    # access_fee: Optional[float] = Field(None, description="Station access fee in AUD")
 
 class TripResponse(BaseModel):
     journeys: List[Journey] = []
