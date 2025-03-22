@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 class StationTranslationService:
     # 定义支持的语言代码
-    available_languages = {"en", "zh"}
+    available_languages = {"en", "zh", "ar", "ja", "ko", "ru", "th"}
 
     def __init__(self):
         self.translations: Dict[str, Dict] = {
@@ -18,6 +18,9 @@ class StationTranslationService:
             "lightrail": self._load_translations("lightrail_stations.json"),
             "trainlink": self._load_translations("trainlink_stations.json")
         }
+        # 加载通用翻译
+        self.common_translations = self._load_translations("common_translation.json")
+        
         # 合并所有翻译以便跨模式查找
         self.all_translations = {}
         for mode_translations in self.translations.values():
@@ -31,8 +34,14 @@ class StationTranslationService:
     def _load_translations(self, filename: str) -> Dict:
         """加载翻译文件"""
         try:
-            file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
-                                   "data", "stations", filename)
+            # 根据文件名选择不同的目录
+            if filename == "common_translation.json":
+                file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
+                                       "data", filename)
+            else:
+                file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
+                                       "data", "stations", filename)
+                                       
             with open(file_path, 'r', encoding='utf-8') as f:
                 translations = json.load(f)
                 logger.debug(f"Successfully loaded {len(translations)} translations from {filename}")
@@ -123,14 +132,16 @@ class StationTranslationService:
             # 处理站台信息
             if "Platform" in part or "platform" in part:
                 platform_num = ''.join(filter(str.isdigit, part))
-                translated_part = f"站台{platform_num}" if language_code == "zh" else part
+                platform_translation = self.common_translations.get("platform", {}).get(language_code, "platform")
+                translated_part = f"{platform_translation}{platform_num}" if language_code != "en" else part
                 translated_parts.append(translated_part)
                 continue
                 
             # 处理Side A/B
             if "Side" in part:
                 side = part.strip()[-1]  # 获取A或B
-                translated_part = f"侧{side}" if language_code == "zh" else part
+                side_translation = self.common_translations.get("side", {}).get(language_code, "side")
+                translated_part = f"{side_translation}{side}" if language_code != "en" else part
                 translated_parts.append(translated_part)
                 continue
                 
@@ -154,11 +165,13 @@ class StationTranslationService:
             
             if translation:
                 # 根据原始名称中的后缀添加对应的翻译
-                if language_code == "zh":
+                if language_code != "en":
                     if original_has_station:
-                        translation += "站"
+                        station_translation = self.common_translations.get("station", {}).get(language_code, "station")
+                        translation = f"{translation}{station_translation}"
                     elif original_has_wharf:
-                        translation += "码头"
+                        wharf_translation = self.common_translations.get("wharf", {}).get(language_code, "wharf")
+                        translation = f"{translation}{wharf_translation}"
                 translated_parts.append(translation)
             else:
                 logger.warning(f"No translation found for '{clean_name}' in any mode")
