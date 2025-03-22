@@ -204,12 +204,14 @@ class TfnswService:
                     
                     # 翻译起点（使用前一个leg的交通工具类型）
                     origin_name = leg.get("origin", {}).get("name", "Unknown")
+                    destination_name = leg.get("destination", {}).get("name", "Unknown")
+                    
+                    # 翻译起点（使用前一个leg的交通工具类型）
                     translated_origin = self.translation_service.translate_station_names(
                         origin_name, prev_mode or transport_mode, language_code
                     )
                     
                     # 翻译终点（使用后一个leg的交通工具类型）
-                    destination_name = leg.get("destination", {}).get("name", "Unknown")
                     translated_destination = self.translation_service.translate_station_names(
                         destination_name, next_mode or transport_mode, language_code
                     )
@@ -230,14 +232,16 @@ class TfnswService:
                     "line": leg.get("transportation", {}).get("disassembledName", "Unknown"),
                     "duration": leg.get("duration", 0),
                     "origin": {
-                        "name": translated_origin,
+                        "name": origin_name,
+                        "translated_name": translated_origin,
                         "departure_time": convert_to_sydney_time(leg.get("origin", {}).get("departureTimePlanned")),
                         "arrival_time": convert_to_sydney_time(leg.get("origin", {}).get("arrivalTimePlanned")),
                         "departure_delay": leg.get("origin", {}).get("departureDelay", 0),
                         "arrival_delay": leg.get("origin", {}).get("arrivalDelay", 0)
                     },
                     "destination": {
-                        "name": translated_destination,
+                        "name": destination_name,
+                        "translated_name": translated_destination,
                         "departure_time": convert_to_sydney_time(leg.get("destination", {}).get("departureTimePlanned")),
                         "arrival_time": convert_to_sydney_time(leg.get("destination", {}).get("arrivalTimePlanned")),
                         "departure_delay": leg.get("destination", {}).get("departureDelay", 0),
@@ -246,18 +250,19 @@ class TfnswService:
                 }
                 formatted_journey["legs"].append(formatted_leg)
                 
-                # Add stop sequence if available
+                # Process stop sequence for this leg
                 if "stopSequence" in leg:
                     for stop in leg["stopSequence"]:
                         stop_name = stop.get("disassembledName", "Unknown")
+                        # 使用当前leg的交通工具类型来翻译站名
                         translated_stop = self.translation_service.translate_station_names(
                             stop_name, transport_mode, language_code
                         )
-                        formatted_stop = {
-                            "disassembledName": translated_stop,
+                        formatted_journey["stopSequence"].append({
+                            "name": stop_name,
+                            "translated_name": translated_stop,
                             "arrivalTimePlanned": convert_to_sydney_time(stop.get("arrivalTimePlanned"))
-                        }
-                        formatted_journey["stopSequence"].append(formatted_stop)
+                        })
             
             journeys.append(formatted_journey)
         

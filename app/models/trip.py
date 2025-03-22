@@ -4,6 +4,7 @@ from datetime import datetime
 
 class Location(BaseModel):
     name: str = "Unknown"
+    translated_name: Optional[str] = None
     departure_time: Optional[str] = None
     arrival_time: Optional[str] = None
     departure_delay: Optional[int] = None  # Departure delay in minutes, positive means delayed
@@ -17,7 +18,8 @@ class TripLeg(BaseModel):
     destination: Location
 
 class StopSequence(BaseModel):
-    disassembledName: str = "Unknown"
+    name: str = "Unknown"
+    translated_name: Optional[str] = None
     arrivalTimePlanned: Optional[str] = None
 
 class Journey(BaseModel):
