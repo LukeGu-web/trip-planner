@@ -163,17 +163,21 @@ class StationTranslationService:
         mode_name = mode_name.lower()
         logger.debug(f"Getting transport mode for: {mode_name}")
         
+        # 移除 "Sydney" 和 "Network" 等通用词
+        mode_name = re.sub(r'sydney\s+', '', mode_name)
+        mode_name = re.sub(r'\s+network', '', mode_name)
+        
         if "train" in mode_name or mode_name == "t":
             return "train"
         elif "metro" in mode_name or mode_name == "m":
             return "metro"
-        elif "ferry" in mode_name or mode_name == "f":
+        elif "ferry" in mode_name or "ferries" in mode_name or mode_name == "f":
             return "ferry"
-        elif "light rail" in mode_name or mode_name == "l":
+        elif "light rail" in mode_name or "lightrail" in mode_name or mode_name == "l":
             return "lightrail"
         elif "trainlink" in mode_name:
             return "trainlink"
-        elif "footpath" in mode_name:
+        elif "footpath" in mode_name or "foot" in mode_name:
             return "footpath"
         else:
             logger.warning(f"Unknown transport mode: {mode_name}")
@@ -216,48 +220,83 @@ class StationTranslationService:
         parts = [part.strip() for part in station_name.split(',')]
         translated_parts = []
         
-        for part in parts:
-            # 处理站台信息
-            if "Platform" in part or "platform" in part:
-                platform_num = ''.join(filter(str.isdigit, part))
-                platform_translation = self.common_translations.get("platform", {}).get(language_code, "platform")
-                if language_code == "ja":
-                    # 日语特殊格式：数字 + 番 + ホーム
-                    translated_parts.append(f"{platform_num}番ホーム")
-                else:
-                    # 其他语言：platform翻译 + 数字
-                    translated_parts.append(f"{platform_translation} {platform_num}")
-                continue
+        if transport_type == "ferry":
+            # 处理渡轮站点名称
+            # 第一部分：主要站点名称
+            main_name = parts[0]
+            clean_name = self._clean_station_name(main_name)
             
-            # 处理Side A/B
-            if "Side" in part:
-                side = part.strip()[-1]  # 获取A或B
-                side_translation = self.common_translations.get("side", {}).get(language_code, "side")
-                translated_parts.append(f"{side_translation} {side}")
-                continue
-            
-            # 处理站名
-            clean_name = self._clean_station_name(part)
-            original_has_station = "Station" in part
-            original_has_wharf = "Wharf" in part
-            
-            # 获取基础翻译
+            # 尝试从 ferry_stations.json 获取翻译
             translation = None
-            if transport_type in self.translations and clean_name in self.translations[transport_type]:
-                translation = self.translations[transport_type][clean_name].get(language_code)
+            if clean_name in self.translations["ferry"]:
+                translation = self.translations["ferry"][clean_name].get(language_code)
             elif clean_name in self.all_translations:
                 translation = self.all_translations[clean_name].get(language_code)
             
             if translation:
-                # 添加适当的后缀
-                if original_has_station:
-                    station_translation = self.common_translations.get("station", {}).get(language_code, "station")
-                    translation = f"{translation}{station_translation}"
-                elif original_has_wharf:
-                    wharf_translation = self.common_translations.get("wharf", {}).get(language_code, "wharf")
-                    translation = f"{translation}{wharf_translation}"
                 translated_parts.append(translation)
+                
+                # 处理 Wharf 后缀
+                if "Wharf" in main_name:
+                    wharf_translation = self.common_translations.get("wharf", {}).get(language_code, "wharf")
+                    translated_parts[-1] = f"{translated_parts[-1]}{wharf_translation}"
             else:
+                # 如果没有找到翻译，保持原样
+                translated_parts.append(main_name)
+            
+            # 处理剩余部分
+            for part in parts[1:]:
+                # 处理 Wharf 编号
+                if "Wharf" in part:
+                    wharf_num = ''.join(filter(str.isdigit, part))
+                    if wharf_num:
+                        wharf_translation = self.common_translations.get("wharf", {}).get(language_code, "wharf")
+                        translated_parts.append(f"{wharf_translation} {wharf_num}")
+                    continue
+                
+                # 处理 Side A/B
+                if "Side" in part:
+                    side = part.strip()[-1]  # 获取A或B
+                    side_translation = self.common_translations.get("side", {}).get(language_code, "side")
+                    translated_parts.append(f"{side_translation} {side}")
+                    continue
+                
+                # 处理地区名称（保持原样）
                 translated_parts.append(part)
+        else:
+            # 处理其他交通工具的站点名称
+            for part in parts:
+                # 处理站台信息
+                if "Platform" in part or "platform" in part:
+                    platform_num = ''.join(filter(str.isdigit, part))
+                    platform_translation = self.common_translations.get("platform", {}).get(language_code, "platform")
+                    if language_code == "ja":
+                        # 日语特殊格式：数字 + 番 + ホーム
+                        translated_parts.append(f"{platform_num}番ホーム")
+                    else:
+                        # 其他语言：platform翻译 + 数字
+                        translated_parts.append(f"{platform_translation} {platform_num}")
+                    continue
+                
+                # 处理站名
+                clean_name = self._clean_station_name(part)
+                original_has_station = "Station" in part
+                
+                # 获取基础翻译
+                translation = None
+                if transport_type in self.translations and clean_name in self.translations[transport_type]:
+                    translation = self.translations[transport_type][clean_name].get(language_code)
+                elif clean_name in self.all_translations:
+                    translation = self.all_translations[clean_name].get(language_code)
+                
+                if translation:
+                    # 添加站台后缀
+                    if original_has_station:
+                        station_translation = self.common_translations.get("station", {}).get(language_code, "station")
+                        translation = f"{translation}{station_translation}"
+                    translated_parts.append(translation)
+                else:
+                    # 如果没有找到翻译，保持原样
+                    translated_parts.append(part)
         
         return ", ".join(translated_parts) 
