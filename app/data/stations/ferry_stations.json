@@ -59,6 +59,16 @@
     "th": "เกาะการ์เดน",
     "type": "Ferry"
   },
+  "Greenwich Point":{
+    "en": "Greenwich Point",
+    "zh": "格林威治角",
+    "ar": "غرينتش بوينت",
+    "ja": "グリニッジ・ポイント",
+    "ko": "그리니치 포인트",
+    "ru": "Гринвич-Пойнт",
+    "th": "กรีนิช พอยท์",
+    "type": "Ferry"
+  },
   "Cockatoo Island": {
     "en": "Cockatoo Island",
     "zh": "鹦鹉岛",

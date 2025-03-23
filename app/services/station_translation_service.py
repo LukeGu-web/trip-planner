@@ -180,23 +180,26 @@ class StationTranslationService:
             return None
 
     def _clean_station_name(self, name: str) -> str:
-        """清理站名，移除常见后缀和不必要的信息"""
-        # 移除平台号
+        """Clean station name by removing common suffixes and unnecessary information"""
+        # Remove platform number
         cleaned_name = re.sub(r', Platform \d+', '', name)
         
-        # 移除常见后缀
+        # Remove common suffixes
         suffixes = [
             " Station",
             #" LR",  # Light Rail
-            " Wharf",  # 轮渡码头
+            " Wharf",  # Ferry wharf
         ]
         
-        # 移除其他后缀
+        # Remove other suffixes
         for suffix in suffixes:
             cleaned_name = cleaned_name.replace(suffix, "")
             
-        # 移除括号内的内容
+        # Remove content in parentheses
         cleaned_name = re.sub(r'\s*\([^)]*\)', '', cleaned_name)
+        
+        # Remove address part after comma
+        # cleaned_name = cleaned_name.split(',')[0].strip()
         
         logger.debug(f"Cleaned station name: {name} -> {cleaned_name}")
         return cleaned_name.strip()
@@ -205,11 +208,11 @@ class StationTranslationService:
                               station_name: str, 
                               transport_type: str,
                               language_code: str) -> str:
-        """翻译站台名称"""
+        """Translate station name"""
         if language_code == "en" or language_code not in self.available_languages:
             return station_name
         
-        # 按逗号分割各个部分
+        # Split by comma to handle different parts
         parts = [part.strip() for part in station_name.split(',')]
         translated_parts = []
         
