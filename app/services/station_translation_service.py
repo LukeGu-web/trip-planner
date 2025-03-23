@@ -187,14 +187,7 @@ class StationTranslationService:
         # 移除常见后缀
         suffixes = [
             " Station",
-            " LR",  # Light Rail
-            ", Sydney",
-            ", Artarmon",
-            ", Chatswood",
-            " Platform",
-            " platform",
-            " Side A",
-            " Side B",
+            #" LR",  # Light Rail
             " Wharf",  # 轮渡码头
         ]
         
@@ -213,30 +206,55 @@ class StationTranslationService:
                               transport_type: str,
                               language_code: str) -> str:
         """翻译站台名称"""
-        logger.debug(f"Translating station: {station_name} ({transport_type}) to {language_code}")
-        
-        # 如果是英文或不支持的语言，直接返回原名
         if language_code == "en" or language_code not in self.available_languages:
             return station_name
-            
-        # 清理站台名称
-        cleaned_name = self._clean_station_name(station_name)
-        logger.debug(f"Cleaned station name: {cleaned_name}")
         
-        # 尝试从翻译文件中获取翻译
-        if transport_type in self.translations and cleaned_name in self.translations[transport_type]:
-            translation = self.translations[transport_type][cleaned_name].get(language_code)
+        # 按逗号分割各个部分
+        parts = [part.strip() for part in station_name.split(',')]
+        translated_parts = []
+        
+        for part in parts:
+            # 处理站台信息
+            if "Platform" in part or "platform" in part:
+                platform_num = ''.join(filter(str.isdigit, part))
+                platform_translation = self.common_translations.get("platform", {}).get(language_code, "platform")
+                if language_code == "ja":
+                    # 日语特殊格式：数字 + 番 + ホーム
+                    translated_parts.append(f"{platform_num}番ホーム")
+                else:
+                    # 其他语言：platform翻译 + 数字
+                    translated_parts.append(f"{platform_translation} {platform_num}")
+                continue
+            
+            # 处理Side A/B
+            if "Side" in part:
+                side = part.strip()[-1]  # 获取A或B
+                side_translation = self.common_translations.get("side", {}).get(language_code, "side")
+                translated_parts.append(f"{side_translation} {side}")
+                continue
+            
+            # 处理站名
+            clean_name = self._clean_station_name(part)
+            original_has_station = "Station" in part
+            original_has_wharf = "Wharf" in part
+            
+            # 获取基础翻译
+            translation = None
+            if transport_type in self.translations and clean_name in self.translations[transport_type]:
+                translation = self.translations[transport_type][clean_name].get(language_code)
+            elif clean_name in self.all_translations:
+                translation = self.all_translations[clean_name].get(language_code)
+            
             if translation:
-                logger.debug(f"Found translation in {transport_type} translations: {translation}")
-                return translation
-                
-        # 尝试从所有翻译中查找
-        if cleaned_name in self.all_translations:
-            translation = self.all_translations[cleaned_name].get(language_code)
-            if translation:
-                logger.debug(f"Found translation in all translations: {translation}")
-                return translation
-                
-        # 如果没有找到翻译，返回原名
-        logger.warning(f"No translation found for: {station_name}")
-        return station_name 
+                # 添加适当的后缀
+                if original_has_station:
+                    station_translation = self.common_translations.get("station", {}).get(language_code, "station")
+                    translation = f"{translation}{station_translation}"
+                elif original_has_wharf:
+                    wharf_translation = self.common_translations.get("wharf", {}).get(language_code, "wharf")
+                    translation = f"{translation}{wharf_translation}"
+                translated_parts.append(translation)
+            else:
+                translated_parts.append(part)
+        
+        return ", ".join(translated_parts) 
