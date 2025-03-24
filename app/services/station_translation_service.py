@@ -22,6 +22,10 @@ class StationTranslationService:
         # 加载通用翻译
         self.common_translations = self._load_translations("common_translation.json")
         
+        # 加载地区翻译
+        self.suburbs = self._load_translations("suburbs.json")
+        logger.info(f"Loaded suburbs translations: {self.suburbs}")
+        
         # 合并所有翻译以便跨模式查找
         self.all_translations = {}
         for mode_translations in self.translations.values():
@@ -36,6 +40,7 @@ class StationTranslationService:
         logger.debug(f"Loaded translations for modes: {list(self.translations.keys())}")
         logger.debug(f"Total unique stations: {len(self.all_translations)}")
         logger.debug(f"Available languages: {self.available_languages}")
+        logger.debug(f"Loaded {len(self.suburbs)} suburb translations")
 
     async def _get_from_cache(self, cache_key: str) -> Optional[str]:
         """从Redis缓存获取翻译结果"""
@@ -143,13 +148,18 @@ class StationTranslationService:
         """加载翻译文件"""
         try:
             # 根据文件名选择不同的目录
-            if filename == "common_translation.json":
+            if filename in ["common_translation.json", "suburbs.json"]:
                 file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
                                        "data", filename)
             else:
                 file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
                                        "data", "stations", filename)
-                                       
+            
+            logger.info(f"Loading translation file from: {file_path}")
+            if not os.path.exists(file_path):
+                logger.error(f"Translation file not found: {file_path}")
+                return {}
+                               
             with open(file_path, 'r', encoding='utf-8') as f:
                 translations = json.load(f)
                 logger.debug(f"Successfully loaded {len(translations)} translations from {filename}")
@@ -261,7 +271,18 @@ class StationTranslationService:
                     translated_parts.append(f"{side_translation} {side}")
                     continue
                 
-                # 处理地区名称（保持原样）
+                # 检查是否是地区名称
+                suburb_name = part.strip()
+                logger.debug(f"Checking if '{suburb_name}' is a suburb in {list(self.suburbs.keys())}")
+                if suburb_name in self.suburbs:
+                    # 从suburbs.json获取地区翻译
+                    suburb_translation = self.suburbs[suburb_name].get(language_code)
+                    logger.debug(f"Found suburb translation for '{suburb_name}': {suburb_translation}")
+                    if suburb_translation:
+                        translated_parts.append(suburb_translation)
+                        continue
+                
+                # 如果不是已知地区或没有翻译，保持原样
                 translated_parts.append(part)
         else:
             # 处理其他交通工具的站点名称
@@ -277,6 +298,17 @@ class StationTranslationService:
                         # 其他语言：platform翻译 + 数字
                         translated_parts.append(f"{platform_translation} {platform_num}")
                     continue
+                
+                # 检查是否是地区名称
+                suburb_name = part.strip()
+                logger.debug(f"Checking if '{suburb_name}' is a suburb in {list(self.suburbs.keys())}")
+                if suburb_name in self.suburbs:
+                    # 从suburbs.json获取地区翻译
+                    suburb_translation = self.suburbs[suburb_name].get(language_code)
+                    logger.debug(f"Found suburb translation for '{suburb_name}': {suburb_translation}")
+                    if suburb_translation:
+                        translated_parts.append(suburb_translation)
+                        continue
                 
                 # 处理站名
                 clean_name = self._clean_station_name(part)
