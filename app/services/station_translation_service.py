@@ -201,7 +201,7 @@ class StationTranslationService:
         # Remove common suffixes
         suffixes = [
             " Station",
-            #" LR",  # Light Rail
+            " Light Rail",  # Light Rail
             " Wharf",  # Ferry wharf
         ]
         
