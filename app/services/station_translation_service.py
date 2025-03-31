@@ -284,6 +284,42 @@ class StationTranslationService:
                 
                 # 如果不是已知地区或没有翻译，保持原样
                 translated_parts.append(part)
+        elif transport_type == "lightrail":
+            # 处理轻轨站点名称
+            # 第一部分：主要站点名称
+            main_name = parts[0]
+            clean_name = self._clean_station_name(main_name)
+            
+            # 尝试从 lightrail_stations.json 获取翻译
+            translation = None
+            if clean_name in self.translations["lightrail"]:
+                translation = self.translations["lightrail"][clean_name].get(language_code)
+            elif clean_name in self.all_translations:
+                translation = self.all_translations[clean_name].get(language_code)
+            
+            if translation:
+                # 添加轻轨后缀翻译
+                light_rail_translation = self.common_translations.get("light rail", {}).get(language_code, "light rail")
+                translated_parts.append(f"{translation} {light_rail_translation}")
+            else:
+                # 如果没有找到翻译，保持原样
+                translated_parts.append(main_name)
+            
+            # 处理剩余部分
+            for part in parts[1:]:
+                # 检查是否是地区名称
+                suburb_name = part.strip()
+                logger.debug(f"Checking if '{suburb_name}' is a suburb in {list(self.suburbs.keys())}")
+                if suburb_name in self.suburbs:
+                    # 从suburbs.json获取地区翻译
+                    suburb_translation = self.suburbs[suburb_name].get(language_code)
+                    logger.debug(f"Found suburb translation for '{suburb_name}': {suburb_translation}")
+                    if suburb_translation:
+                        translated_parts.append(suburb_translation)
+                        continue
+                
+                # 如果不是已知地区或没有翻译，保持原样
+                translated_parts.append(part)
         else:
             # 处理其他交通工具的站点名称
             for part in parts:
